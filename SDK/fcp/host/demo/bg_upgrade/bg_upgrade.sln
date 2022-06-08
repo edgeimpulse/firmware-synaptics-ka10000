@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.329
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bg_upgrade", "bg_upgrade.vcxproj", "{EC16EB23-E90A-4077-BE3C-8B98B42D737D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_I2C|Win32 = Debug_I2C|Win32
+		Debug_I2CF3|Win32 = Debug_I2CF3|Win32
+		Debug_I2CF30x42|Win32 = Debug_I2CF30x42|Win32
+		Debug_USB|Win32 = Debug_USB|Win32
+		Release_I2C|Win32 = Release_I2C|Win32
+		Release_I2CF3|Win32 = Release_I2CF3|Win32
+		Release_I2CF30x42|Win32 = Release_I2CF30x42|Win32
+		Release_USB|Win32 = Release_USB|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Debug_I2C|Win32.ActiveCfg = Debug_I2C|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Debug_I2C|Win32.Build.0 = Debug_I2C|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Debug_I2CF3|Win32.ActiveCfg = Debug_I2CF3|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Debug_I2CF3|Win32.Build.0 = Debug_I2CF3|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Debug_I2CF30x42|Win32.ActiveCfg = Debug_I2CF30x42|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Debug_I2CF30x42|Win32.Build.0 = Debug_I2CF30x42|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Debug_USB|Win32.ActiveCfg = Debug_USB|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Debug_USB|Win32.Build.0 = Debug_USB|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Release_I2C|Win32.ActiveCfg = Release_I2C|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Release_I2C|Win32.Build.0 = Release_I2C|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Release_I2CF3|Win32.ActiveCfg = Release_I2CF3|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Release_I2CF3|Win32.Build.0 = Release_I2CF3|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Release_I2CF30x42|Win32.ActiveCfg = Release_I2CF30x42|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Release_I2CF30x42|Win32.Build.0 = Release_I2CF30x42|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Release_USB|Win32.ActiveCfg = Release_USB|Win32
+		{EC16EB23-E90A-4077-BE3C-8B98B42D737D}.Release_USB|Win32.Build.0 = Release_USB|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7BF5AFAA-3138-4C1E-8B1C-F9B8D7E698A0}
+	EndGlobalSection
+EndGlobal

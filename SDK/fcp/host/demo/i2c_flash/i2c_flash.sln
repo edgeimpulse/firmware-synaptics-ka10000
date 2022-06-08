@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "i2c_flash", "i2c_flash.vcxproj", "{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_BT_SPP|Win32 = Debug_BT_SPP|Win32
+		Debug_F3|Win32 = Debug_F3|Win32
+		Debug|Win32 = Debug|Win32
+		Release_BT_SPP|Win32 = Release_BT_SPP|Win32
+		Release_F3|Win32 = Release_F3|Win32
+		Release_RDK|Win32 = Release_RDK|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Debug_BT_SPP|Win32.ActiveCfg = Debug_BT_SPP|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Debug_BT_SPP|Win32.Build.0 = Debug_BT_SPP|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Debug_F3|Win32.ActiveCfg = Debug_F3|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Debug_F3|Win32.Build.0 = Debug_F3|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Debug|Win32.Build.0 = Debug|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Release_BT_SPP|Win32.ActiveCfg = Release_BT_SPP|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Release_BT_SPP|Win32.Build.0 = Release_BT_SPP|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Release_F3|Win32.ActiveCfg = Release_F3|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Release_F3|Win32.Build.0 = Release_F3|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Release_RDK|Win32.ActiveCfg = Release_RDK|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Release_RDK|Win32.Build.0 = Release_RDK|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Release|Win32.ActiveCfg = Release|Win32
+		{8B8EC8FC-837E-4FFD-9506-69FA98785ABF}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

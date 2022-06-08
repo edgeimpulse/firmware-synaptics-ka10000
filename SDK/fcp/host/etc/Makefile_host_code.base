@@ -1,0 +1,198 @@
+################################################################################
+#
+#  CONEXANT SYSTEMS, INC. CONFIDENTIAL AND PROPRIETARY
+#
+#  The information contained in this source code file
+#  is strictly confidential and proprietary to Conexant Systems, Inc.
+#  ("Conexant")
+#
+#  No part of this file may be possessed, reproduced or distributed, in
+#  any form or by any means for any purpose, without the express written
+#  permission of Conexant Systems Inc.
+#
+#  Except as otherwise specifically provided through an express agreement
+#  with Conexant that governs the confidentiality, possession, use
+#  and distribution of the information contained in this file, CONEXANT
+#  PROVIDES THIS INFORMATION "AS IS" AND MAKES NO REPRESENTATIONS OR
+#  WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY IMPLIED
+#  WARRANTY OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE,
+#  TITLE OR NON-INFRINGEMENT, AND SPECIFICALLY DISCLAIMS SUCH WARRANTIES
+#  AND REPRESENTATIONS.  IN NO EVENT WILL CONEXANT BE LIABLE FOR ANY DAMAGES
+#  ARISING FROM THE USE OF THE INFORMATION CONTAINED IN THIS FILE.
+#
+#  Copyright (C) 2009-2017 Conexant Systems Inc.
+#  All rights reserved.
+#
+################################################################################
+
+.PHONY: all clean
+
+ifeq ($(VERBOSE), Y)
+.ONESHELL:
+.SHELLFLAGS=-ec
+#V                       := @
+endif
+
+RM                      := rm -f
+MKDIR                   := mkdir -p
+
+COMPILE_ENV             := ${shell uname -a}
+IS_CYGWIN               := $(if $(findstring Cygwin,$(COMPILE_ENV)),"Y","")
+IS_RPI                  := $(if $(findstring raspberrypi,$(COMPILE_ENV)),"Y","")
+IS_LINUX_X86            := $(if $(findstring x86,$(COMPILE_ENV)),"Y","")
+################################################################################
+#   CROSS_COMPILE       : cross compiling toolchain
+#   SRCS_CPP            : cpp sources need to be compiled.
+#   CPPFLAGS            : compile flags.
+#   TARGET              : final target name.
+#   TARGET_PATH         : path of final target.
+#   LDFLAGS             : flags for linker.
+
+#   HOST_TOP            : relative path of host_demo_code defined by external
+#   CUR_DIR             : relative path of host_demo_code defined by external
+################################################################################
+CC                      =  $(CROSS_COMPILE)g++
+AR                      =  $(CROSS_COMPILE)ar
+OBJECTS                 := $(SRCS_CPP:.cpp=.o)
+OBJECTS                 += $(SRCS_C:.c=.o)
+CPPFLAGS                += -x c++ \
+                           -I$(HOST_TOP)/ \
+                           $(EXTRA_CPPFLAGS)
+ARFLAGS                 := crs
+LDFLAGS                 += $(EXTRA_LDFLAGS)
+
+## For Linux RPi
+ifeq ($(IS_RPI),"Y")
+override VARIANT        := linux_rpi
+endif
+
+## For Linux X86 PC
+ifeq ($(IS_LINUX_X86),"Y")
+override VARIANT        ?= linux_x86
+endif
+
+################################################################################
+## Specific for each VARIANT.
+################################################################################
+
+ifeq ($(VARIANT), linux_armv7-a)
+ifeq ($(IS_CYGWIN),"Y")
+  CROSS_COMPILE           ?= /usr/local/tools/buildtools/gcc-linaro-7.3.1-2018.05-i686-mingw32_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+#CROSS_COMPILE           ?= /tmp/hdc_toolchains/gcc-linaro-4.9.4-2017.01-i686-mingw32_arm-linux-gnueabi/bin/arm-linux-gnueabi-
+else
+  CROSS_COMPILE           ?= /tmp/hdc_toolchains/gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabi/bin/arm-linux-gnueabi-
+endif
+  CPPFLAGS                += -march=armv7-a -DCONFIG_TARGET_OS_LINUX
+endif
+
+ifeq ($(VARIANT), linux64_armv8-a)
+ifeq ($(IS_CYGWIN),"Y")
+  CROSS_COMPILE           ?= /usr/local/tools/buildtools/gcc-linaro-6.3.1-2017.02-i686-mingw32_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+#CROSS_COMPILE           ?= /tmp/hdc_toolchains/gcc-linaro-4.9.4-2017.01-i686-mingw32_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+else
+  CROSS_COMPILE           ?= /tmp/hdc_toolchains/gcc-linaro-4.9.4-2017.01-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+endif
+  CPPFLAGS                += -march=armv8-a -fpermissive -DCONFIG_TARGET_OS_LINUX
+endif
+
+ifeq ($(VARIANT), android_armv7-a)
+  CROSS_COMPILE           ?= /tmp/my-android-toolchain-arm-platform_21-4.9/bin/arm-linux-androideabi-
+  CPPFLAGS                += -march=armv7-a -fPIC -fPIE -pie -DHOST_PLATFORM_ANDRROID -DCONFIG_TARGET_OS_ANDROID  
+  LDFLAGS                 += -pie -llog  
+endif
+
+ifeq ($(VARIANT), android64_armv8-a)
+  CROSS_COMPILE           ?= /tmp/my-android-toolchain-aarch64-platform_21-4.9/bin/aarch64-linux-android-
+  CPPFLAGS                += -march=armv8-a -fPIC -fPIE -pie -fpermissive -DHOST_PLATFORM_ANDRROID -DCONFIG_TARGET_OS_ANDROID  
+  LDFLAGS                 += -pie -llog
+endif
+
+ifeq ($(VARIANT), linux_rpi)
+ifeq ($(IS_CYGWIN),"Y")
+  CROSS_COMPILE           ?= /tmp/hdc_toolchains/gcc-linaro-4.9.4-2017.01-i686-mingw32_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+else
+ifneq ($(IS_RPI),"Y")
+  CROSS_COMPILE           ?= /tmp/hdc_toolchains/gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+else
+  CROSS_COMPILE           :=
+  LDFLAGS                 += -L/usr/lib/arm-linux-gnueabihf/ -L/usr/lib64/
+endif
+endif
+endif
+
+ifeq ($(VARIANT), linux_armv7-a_hf)
+ifeq ($(IS_CYGWIN),"Y")
+  CROSS_COMPILE           ?= /tmp/hdc_toolchains/gcc-linaro-4.9.4-2017.01-i686-mingw32_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+else
+ifneq ($(IS_RPI),"Y")
+  CROSS_COMPILE           ?= /tmp/hdc_toolchains/gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+else
+  CROSS_COMPILE           :=
+  LDFLAGS                 += -L/usr/lib/arm-linux-gnueabihf/ -L/usr/lib64/
+endif
+endif
+endif
+
+
+ifeq ($(VARIANT), qca402x)
+ifeq ($(IS_CYGWIN),"Y")
+  CROSS_COMPILE           ?= /c/Program\ Files\ \(x86\)/GNU\ Tools\ ARM\ Embedded/7\ 2017-q4-major/bin/arm-none-eabi-
+  CPPFLAGS                += -mcpu=cortex-m4 -mthumb -fno-short-enums -O2 -ffunction-sections
+endif
+endif
+
+ifeq ($(VARIANT), qualcomm)
+ifeq ($(IS_CYGWIN),"Y")
+  CROSS_COMPILE           ?= /cygdrive/c/Program\ Files\ \(x86\)/GNU\ Tools\ ARM\ Embedded/6.2\ 2016q4/bin/arm-none-eabi-
+  CPPFLAGS                += -c -mcpu=cortex-m4 -mthumb -fno-short-enums -fno-exceptions -O2 -Os -ffunction-sections  -Wall
+endif
+endif
+
+
+ifeq ($(VARIANT), linux_x86)
+  CPPFLAGS                += -Wint-to-pointer-cast -fpermissive -fPIC
+endif
+
+
+ifeq ($(VARIANT), custom)
+## CROSS_COMPILE        defined by command line.
+## CPPFLAGS             defined by command line.
+
+#TARGET_PATH             := $(CUR_DIR)/$(VARIANT)
+endif
+
+################################################################################
+# This is only for compiling from trunk instead of FCP.
+################################################################################
+CPPFLAGS                += -I$(HOST_TOP)/../caf/include \
+                           -I$(HOST_TOP)/../platform/src/include \
+                           -I$(HOST_TOP)/../platform/src/api_src/include
+
+
+################################################################################
+################################################################################
+TARGET_PATH             ?= $(CUR_DIR)/pre_compiled/$(VARIANT)
+DUMMY                   := ${shell $(MKDIR) $(TARGET_PATH)}
+
+################################################################################
+################################################################################
+all: clean $(TARGET_PATH)/$(TARGET)
+
+$(TARGET_PATH)/$(TARGET): $(OBJECTS)
+ifeq ($(suffix $(TARGET)),.a)
+	@echo AR $@
+	$(V)$(AR) $(ARFLAGS) $@ $(OBJECTS)
+else
+	@echo Linking $@
+	$(V)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+endif
+
+.cpp.o:
+	@echo CC $@
+	$(V)$(CC) $(CPPFLAGS) $< -o $@
+
+clean:
+	@echo VARIANT=$(VARIANT)
+	@echo Cleaning
+	@echo $(origin CROSS_COMPILE) CROSS_COMPILE=$(CROSS_COMPILE)
+	$(V)$(RM) $(OBJECTS) $(TARGET_PATH)/$(TARGET)

@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "calib_demo", "calib_demo.vcxproj", "{8BA46947-B689-4D28-AA47-CF1993A8D2FF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_I2C|Win32 = Debug_I2C|Win32
+		Debug_I2CF3|Win32 = Debug_I2CF3|Win32
+		Debug_Socket|Win32 = Debug_Socket|Win32
+		Debug_USB|Win32 = Debug_USB|Win32
+		Debug|Win32 = Debug|Win32
+		Release_I2C|Win32 = Release_I2C|Win32
+		Release_I2CF3|Win32 = Release_I2CF3|Win32
+		Release_Socket|Win32 = Release_Socket|Win32
+		Release_USB|Win32 = Release_USB|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug_I2C|Win32.ActiveCfg = Debug_I2C|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug_I2C|Win32.Build.0 = Debug_I2C|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug_I2CF3|Win32.ActiveCfg = Debug_I2CF3|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug_I2CF3|Win32.Build.0 = Debug_I2CF3|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug_Socket|Win32.ActiveCfg = Debug_Socket|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug_Socket|Win32.Build.0 = Debug_Socket|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug_USB|Win32.ActiveCfg = Debug_USB|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug_USB|Win32.Build.0 = Debug_USB|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug|Win32.ActiveCfg = Debug_USB|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Debug|Win32.Build.0 = Debug_USB|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release_I2C|Win32.ActiveCfg = Release_I2C|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release_I2C|Win32.Build.0 = Release_I2C|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release_I2CF3|Win32.ActiveCfg = Release_I2CF3|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release_I2CF3|Win32.Build.0 = Release_I2CF3|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release_Socket|Win32.ActiveCfg = Release_Socket|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release_Socket|Win32.Build.0 = Release_Socket|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release_USB|Win32.ActiveCfg = Release_USB|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release_USB|Win32.Build.0 = Release_USB|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release|Win32.ActiveCfg = Release_USB|Win32
+		{8BA46947-B689-4D28-AA47-CF1993A8D2FF}.Release|Win32.Build.0 = Release_USB|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

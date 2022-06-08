@@ -1,0 +1,1210 @@
+################################################################################
+#
+#  CONEXANT SYSTEMS, INC. CONFIDENTIAL AND PROPRIETARY
+#
+#  The information contained in this source code file
+#  is strictly confidential and proprietary to Conexant Systems, Inc.
+#  ("Conexant")
+#
+#  No part of this file may be possessed, reproduced or distributed, in
+#  any form or by any means for any purpose, without the express written
+#  permission of Conexant Systems Inc.
+#
+#  Except as otherwise specifically provided through an express agreement
+#  with Conexant that governs the confidentiality, possession, use
+#  and distribution of the information contained in this file, CONEXANT
+#  PROVIDES THIS INFORMATION "AS IS" AND MAKES NO REPRESENTATIONS OR
+#  WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY IMPLIED
+#  WARRANTY OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE,
+#  TITLE OR NON-INFRINGEMENT, AND SPECIFICALLY DISCLAIMS SUCH WARRANTIES
+#  AND REPRESENTATIONS.  IN NO EVENT WILL CONEXANT BE LIABLE FOR ANY DAMAGES
+#  ARISING FROM THE USE OF THE INFORMATION CONTAINED IN THIS FILE.
+#
+#  Copyright (C) 2009-2019 Conexant Systems Inc.
+#  All rights reserved.
+#
+################################################################################
+V:=@
+.ONESHELL:
+.SHELLFLAGS=-ec
+
+ECHO_ESC =/usr/bin/echo -e
+
+post_build:	# Default target
+
+ifneq ($(in-sdk),y)
+# Note: order of the ITCL scripts in this list is important!
+master_scripts := $(CAFBASEROOT)/caf/include/tcl/master_caf.itcl                                                                        \
+                  $(CAFBASEROOT)/caf/include/tcl/master_eq.itcl                                                                         \
+                  $(wildcard $(CAFBASEROOT)/caf/include/tcl/master_hw*tcl)                                                              \
+                  $(wildcard $(foreach plt,$(PLATFORM),$(CAFBASEROOT)/platform/$(plt)/include/tcl/master_plt_$(plt).itcl))              \
+                  $(wildcard $(foreach plt,$(PLATFORM),$(CAFBASEROOT)/platform/$(plt)/include/tcl/master_plt_$(plt)_dbg.itcl))          \
+                  $(wildcard $(foreach plt,$(PLATFORM),$(CAFBASEROOT)/platform/$(plt)/include/tcl/master_io_interface_$(plt).itcl))     \
+                  $(wildcard $(foreach plt,$(PLATFORM),$(CAFBASEROOT)/platform/$(plt)/include/tcl/master_hw_$(plt).itcl))               \
+                  $(wildcard $(foreach plt,$(PLATFORM),$(CAFBASEROOT)/platform/$(plt)/include/tcl/base_script_$(plt)_*.itcl))           \
+                  $(wildcard $(foreach mdl,$(MDL_LIBS),$(CAFBASEROOT)/libraries/$(mdl)/$(FLAVOR)_code/include/tcl/master_$(mdl)_*.itcl))\
+                  $(wildcard $(foreach mdl,$(MDL_LIBS),$(CAFBASEROOT)/libraries/$(mdl)/$(FLAVOR)_code/include/tcl/base_topology_*.itcl))
+
+# DSP tuning mode scripts
+dsp_mode_scripts := $(wildcard $(CAFBASEROOT)/libraries/cnxt/$(FLAVOR)_code/include/tcl/dsp_*tcl)
+ifeq ($(CONFIG_MDL_GOOG),y)
+  dsp_mode_scripts += $(wildcard $(CAFBASEROOT)/libraries/goog/$(FLAVOR)_code/include/tcl/master_*tcl)
+endif
+ifeq ($(CONFIG_MDL_LENO),y)
+  dsp_mode_scripts += $(wildcard $(CAFBASEROOT)/libraries/lenovo/$(FLAVOR)_code/include/tcl/master_*tcl)
+endif
+
+ifneq ("$(wildcard $(strip $(dsp_mode_scripts)))","")
+  master_scripts += $(dsp_mode_scripts)
+endif
+
+# hardware specific scripts
+plt_hw_spec_scripts := $(wildcard $(foreach plt,$(PLATFORM),$(INT_SCRDIR)/master_hw_$(plt)_*.itcl))
+ifneq ("$(wildcard $(strip $(plt_hw_spec_scripts)))","")
+  master_scripts += $(plt_hw_spec_scripts)
+endif
+
+# Internal scripts are to be sourced before sourcing the external scripts
+int_base_scripts := $(wildcard $(INT_SCRDIR)/base_*tcl)
+ifneq ("$(wildcard $(strip $(int_base_scripts)))","")
+  master_scripts += $(int_base_scripts)
+endif
+
+scr_base_scripts := $(wildcard $(SCRDIR)/base_*tcl)
+ifneq ("$(wildcard $(strip $(scr_base_scripts)))","")
+  master_scripts += $(scr_base_scripts)
+endif
+
+else
+
+master_scripts :=
+GOLEM := $(CAFBASEROOT)/prebuilt/golem.glm 
+
+endif
+
+scripts_bin			:= 	$(sort $(subst .tcl,.bin,$(addprefix $(BLD_TMPDIR)/,$(notdir $(scripts_to_flash)))))
+ifeq ('$(DEBUG)','y')
+  $(info scripts_bin=$(scripts_bin))
+endif
+
+blobs_bin			:= 	$(sort $(subst .blob,.bin,$(addprefix $(BLD_TMPDIR)/,$(notdir $(blobs_to_flash)))) $(blobs_bin))
+ifeq ('$(DEBUG)','y')
+  $(info blobs_bin=$(blobs_bin))
+endif
+
+wavs_bin			:= 	$(sort $(subst .wav,.bin,$(addprefix $(BLD_TMPDIR)/,$(notdir $(wavs_to_flash)))) $(wavs_bin))
+
+cus0_bin			:= 	$(sort $(subst .cus0,.bin,$(addprefix $(BLD_TMPDIR)/,$(notdir $(cus0_to_flash)))) $(cus0_bin))
+ifeq ('$(DEBUG)','y')
+  $(info wavs_bin=$(wavs_bin))
+  $(info cus0_bin=$(cus0_bin))
+endif
+
+int_scripts_bin   := $(sort $(subst .tcl,.bin,$(addprefix $(BLD_TMPDIR)/,$(notdir $(int_scripts_to_flash)))))
+ifeq ('$(DEBUG)','y')
+  $(info int_scripts_bin=$(int_scripts_bin))
+endif
+
+temp_tcl_files =  $(wildcard $(BLD_TMPDIR)/*.tcl)
+
+$(scripts_bin): $(BLD_TMPDIR)
+
+$(blobs_bin): $(blobs_to_flash)
+	$(foreach blob, $(blobs_to_flash), $(CP) $(blob) $(BLD_TMPDIR)/$(patsubst %.blob,%.bin,$(notdir $(blob)));)
+
+$(wavs_bin):$(wavs_to_flash)
+	$(foreach wav, $(wavs_to_flash), $(CP) $(wav) $(BLD_TMPDIR)/$(patsubst %.wav,%.bin,$(notdir $(wav)));)
+
+$(cus0_bin):$(cus0_to_flash)
+	$(foreach cus0, $(cus0_to_flash), $(CP) $(cus0) $(BLD_TMPDIR)/$(patsubst %.cus0,%.bin,$(notdir $(cus0)));)
+
+define script_flash_rule
+# Pattern rule to compile Tcl files
+# Note: if Tcl script compilation by Golem fails from whatever reason, 0 size target file is created anyway.
+#       This fools make and there will be no more attempt made to generate .bin file.
+#       In case golem returns with error, delete the target file and fail the build
+$$(subst .tcl,.bin,$$(addprefix $$(BLD_TMPDIR)/,$$(notdir $(1)))) : $(1) $$(master_scripts) $$(GOLEM)
+	$$(V)echo 
+	$$(V)echo 
+	$$(V)echo 
+	$$(V)echo GOLEM $$(notdir $$<)
+	echo 'catch [file delete -force $$(call format_tcl_path,$$@) $$(call format_tcl_path,$$@.new)]; source $$(call format_tcl_path,$$(GOLEM)); \
+          $$(foreach ms,$$(master_scripts),source $$(call format_tcl_path,$$(ms));) \
+          golem::compile $$< -o $$(call format_tcl_path,$$@.new); \
+          store_dot_script_file $$(call format_tcl_path,$$(BLD_TMPDIR)) ; \
+          file rename -force $$(call format_tcl_path,$$@.new) $$(call format_tcl_path,$$@)' | $$(TCLKIT)
+	@test -e $$@
+endef
+
+$(foreach script,$(int_scripts_to_flash),$(eval $(call script_flash_rule,$(script))))
+$(foreach script,$(scripts_to_flash),$(eval $(call script_flash_rule,$(script))))
+
+
+# Pattern rule to copy TCL files
+$(REL_SCRDIR)/%: $(SRC_SCRDIR)/%
+	$(copy_recipe)
+
+# Pattern rules to copy documentation
+$(REL_DOCDIR)/%.pdf: $(SRC_DOCDIR)/%.docx
+	$(doc2pdf_recipe)
+
+$(REL_DOCDIR)/%: $(SRC_DOCDIR)/%
+	$(copy_recipe)
+
+define external_doc2pdf_rules
+$$(REL_DOCDIR)/$(subst .docx,.pdf,$(notdir $(1))): $(1)
+	$$(doc2pdf_recipe)
+endef
+
+define external_doc_rules
+$$(REL_DOCDIR)/$(notdir $(1)): $(1)
+	$$(copy_recipe)
+endef
+
+$(foreach f,$(filter     %.docx,$(external_documents)),$(eval $(call external_doc2pdf_rules,$(f))))
+$(foreach f,$(filter-out %.docx,$(external_documents)),$(eval $(call external_doc_rules,$(f))))
+
+define fcp_doc2pdf_rules
+$$(FCP_DOCDIR)/$(subst .docx,.pdf,$(notdir $(1))): $(1)
+	$$(doc2pdf_recipe)
+endef
+
+define fcp_doc_rules
+$$(FCP_DOCDIR)/$(notdir $(1)): $(1)
+	$$(copy_recipe)
+endef
+
+$(foreach f,$(filter     %.docx,$(fcp_src_docs)),$(eval $(call fcp_doc2pdf_rules,$(f))))
+$(foreach f,$(filter-out %.docx,$(fcp_src_docs)),$(eval $(call fcp_doc_rules,$(f))))
+
+# Pattern rule to copy bootloaders
+ifneq ("$(CONFIG_BOOT_I2CS_FLASH)$(CONFIG_BOOT_UART_FLASH)","")
+$(REL_FWDIR)/%flash.bin: $(CAFBASEROOT)/platform/bld/boot/%flash.bin
+	$(copy_recipe)
+endif  
+
+ifneq ("$(CONFIG_LIVE_I2C_FLASH)$(CONFIG_LIVE_UART_FLASH)","")
+$(REL_FWDIR)/%flash.bin: $(CAFBASEROOT)/platform/bld/live/%flash.bin
+	$(copy_recipe)
+endif
+
+pkg_tasks            := package_scripts package_doc  
+pkg_tasks            += $(if $(CONFIG_PLATFORM_OBJECT),package_platform)
+pkg_tasks            += $(if $(CONFIG_TARGET_PLUGIN), package_plugin)
+pkg_tasks            += $(if $(CONFIG_TARGET_ANDROID),package_android)
+pkg_tasks            += $(if $(CONFIG_TARGET_LINUX),package_linux)
+pkg_tasks            += $(if $(CONFIG_TARGET_NIUE),package_niue_platform)
+ifeq ($(in-sdk),y)
+pkg_tasks            += $(if $(or $(CONFIG_TARGET_TAHITI),$(CONFIG_TARGET_KATANA)),package_tahiti_platform_in_sdk)
+else
+pkg_tasks            += $(if $(or $(CONFIG_TARGET_TAHITI),$(CONFIG_TARGET_KATANA)),package_tahiti_platform)
+endif
+#should be after package_tahiti_platform  because it depends on package_tahiti_platform
+pkg_tasks            += $(if $(CONFIG_GOLEM),package_golem)
+pkg_tasks            += $(if $(CONFIG_SIMULATOR),package_simulator)
+pkg_tasks            += $(if $(CONFIG_SDK),package_sdk)
+ifneq ($(no-fcp),y)
+pkg_tasks            += $(if $(CONFIG_TUNING),package_tuning)
+pkg_tasks            += $(if $(CONFIG_FCP),package_fcp)
+endif
+pkg_tasks_custom     := $(addsuffix _custom,$(pkg_tasks))
+obsolete_image_files := $(subst $(image_file),,$(wildcard $(REL_FWDIR)/*.sfs))
+obsolete_image_files := $(subst $(padded_image_file),,$(obsolete_image_files))
+obsolete_image_files := $(subst $(evk_image_file),,$(obsolete_image_files))
+obsolete_golem_files := $(subst $(golem_file),,$(wildcard $(REL_GLMDIR)/*.glm))
+obsolete_golem_files += $(subst $(golem_file),,$(wildcard $(REL_FWDIR)/*.glm))
+obsolete_sim_files   := $(subst $(native_sim_file),,$(wildcard $(REL_SIMDIR)/*.dll)) \
+                        $(subst $(multi_core_sim_file),,$(wildcard $(REL_SIMDIR)/*_capesim))
+obsolete_files		 := $(obsolete_image_files)
+obsolete_files		 += $(obsolete_golem_files)
+obsolete_files		 += $(obsolete_sim_files)
+
+.PHONY:     $(pkg_tasks) $(pkg_tasks_custom) pre_build post_build clean
+pre_build:
+ifneq ($(strip $(obsolete_files)),)
+pre_build: $(obsolete_files)
+	$(remove_recipe)
+else
+pre_build:
+endif
+
+package_platform: pre_build
+
+post_build: pre_build $(pkg_tasks) $(pkg_tasks_custom)
+
+
+package: post_build
+	$(V)echo "Packaging Complete"
+	date
+
+# Rules for directories
+$(BLDDIR) $(RELDIR) $(REL_SCRDIR) $(BLD_TMPDIR) $(REL_DOCDIR) $(REL_FWDIR) $(REL_SDKDIR) $(REL_GLMDIR):
+	$(mkdir_recipe)
+
+# Rule to create final image file
+ifneq ($(no-image),y)
+IMAGE_CREATED=1
+# Rule to create final image file (including compiled scripts)
+# Note: In case of the dublicated file like
+#       File '..d/samsung/demo2014/scripts/sm14_SRS4_speech_recog_ssp_ref4ch.bin' already exists in sfs image file
+#       need to remove the image file that doesn't contain all scripts, otherwise 'make' will not attempt to add
+#       changed file again.
+$(image_file): $(CAFBASEROOT)/platform/bld/release/image.sfs $(MKSFS) $(scripts_bin) $(blobs_bin) $(wavs_bin)
+	$(copy_recipe)
+	#chmod +w $@
+	$(if $(scripts_bin),($(MKSFS) $@ -a -S $(foreach bin,$(scripts_bin),$(call script_id,$(bin))=$(bin)) -E && ($(MKSFS) -l $@ | grep File)) || ($(RM) $@ && false))
+
+$(padded_image_file): $(image_file)
+	$(copy_recipe)
+	($(MKSFS) -o $@ -p) || ($(RM) $@ && false)
+endif
+
+ifneq ($(no-simulator),y)
+$(native_sim_file): $(src_native_sim_file)
+	$(copy_recipe)
+$(multi_core_sim_file): $(src_multi_core_sim_file)
+	$(copy_recipe)
+$(tclsh_sim_tool): $(TCLKIT)
+	$(copy_recipe)
+$(sim_run_script): $(src_sim_run_script)
+	$(copy_recipe)
+$(sim_run_bat_file): $(src_sim_run_bat_file)
+	$(copy_recipe)
+	$(SED) -i -e 's/tmpl/$(prefix)/' $@
+endif
+
+# Rule to package scripts
+ifneq ($(no-scripts),y)
+package_scripts: $(REL_SCRDIR) $(BLD_TMPDIR) $(addprefix $(REL_SCRDIR)/,$(notdir $(scripts)))
+endif
+
+# Rule to package documentation
+ifneq ($(no-documentation),y)
+package_doc: $(REL_DOCDIR) $(addprefix $(REL_DOCDIR)/,$(notdir $(documents) $(subst .docx,.pdf,$(external_documents))))
+endif
+
+ifeq ($(CONFIG_TARGET_NIUE),y)
+CREATE_FS_TOOL := $(CAFBASEROOT)/platform/niue/tools/create_file_system.tcl
+endif
+ifeq ($(or $(CONFIG_TARGET_TAHITI),$(CONFIG_TARGET_KATANA)),y)
+CREATE_FS_TOOL := $(CAFBASEROOT)/platform/tahiti/tools/create_file_system.tcl
+endif
+
+ifeq ($(or $(CONFIG_TARGET_TAHITI),$(CONFIG_TARGET_KATANA)),y)
+
+M33_BIN_FILE := mcu_s.bin
+M33_IMG_FILE := mcu_s.img
+M33_LOAD_FILE := qspi_boot.img
+M33_FULL_FILE := mcu_full.img
+I2C_TOOLS := $(CAFBASEROOT)/platform/tahiti/m33/test/i2c_flash
+I2C_UPGRADE_TOOLS := $(CAFBASEROOT)/host/release/demo
+BOOT_BUILD := platform/tahiti/m33/build
+INPUT_FILE := ../platform/tahiti/m33/build/$(M33_BIN_FILE)
+OUTPUT_FILE := $(I2C_TOOLS)/$(M33_IMG_FILE)
+
+ifeq ($(CONFIG_FCP_PACK_I2C_FLASH_AS_DEFAULT),y)
+ifeq ($(CONFIG_FCP_PACK_I2C_FLASH_SIENA),y)
+I2C_FLASH_TOOLS :=$(I2C_UPGRADE_TOOLS)/i2c_flash/Win32/Release/i2c_flash.exe
+else
+ifeq ($(CONFIG_FCP_PACK_I2C_FLASH_F3),y)
+I2C_FLASH_TOOLS :=$(I2C_UPGRADE_TOOLS)/i2c_flash/Win32/Release_F3/i2c_flash_f3.exe
+I2C_FLASH_TOOLS +=$(I2C_UPGRADE_TOOLS)/i2c_flash/pre_compiled/linux_x86/F3/i2c_flash_f3_linux
+else
+ifeq ($(CONFIG_FCP_PACK_I2C_FLASH_BT_SPP),y)
+I2C_FLASH_TOOLS :=$(I2C_UPGRADE_TOOLS)/i2c_flash/Win32/Release_BT_SPP/i2c_flash_bt_spp.exe
+endif
+endif
+endif
+endif
+
+ifeq ($(CONFIG_FCP_PACK_I2C_LOAD_AS_DEFAULT),y)
+I2C_FLASH_TOOLS :=$(I2C_UPGRADE_TOOLS)/api_i2c_load/Win32/Release/i2c_load.exe
+endif
+
+ifeq ($(CONFIG_FCP_PACK_BG_UPGRADE_AS_DEFAULT),y)
+ifeq ($(CONFIG_FCP_PACK_BG_UPGRADE_VIA_SIENA),y)
+I2C_FLASH_TOOLS :=$(I2C_UPGRADE_TOOLS)/bg_upgrade/Win32/Release_I2C/bg_upgrade.exe
+else
+ifeq ($(CONFIG_FCP_PACK_BG_UPGRADE_VIA_F3),y)
+I2C_FLASH_TOOLS :=$(I2C_UPGRADE_TOOLS)/bg_upgrade/Win32/Release_I2CF3/bg_upgrade.exe
+else
+ifeq ($(CONFIG_FCP_PACK_BG_UPGRADE_VIA_F3_0x42),y)
+I2C_FLASH_TOOLS :=$(I2C_UPGRADE_TOOLS)/bg_upgrade/Win32/Release_I2CF30x42/bg_upgrade_i2c_f3_0x42.exe
+ifeq ($(CONFIG_FCP_PACK_BG_UPGRADE_VIA_USB),y)
+I2C_FLASH_TOOLS :=$(I2C_UPGRADE_TOOLS)/bg_upgrade/Win32/Release_USB/bg_upgrade.exe
+endif
+endif
+endif
+endif
+endif
+
+REL_ROOTDIR := ../bld$(if $(CONFIG),/$(CONFIG))/release/firmware
+
+ifeq ($(CONFIG_TAHITI_SEC_IMAGE),y)
+ifeq ($(CONFIG_TAHITI_SEC_ENCRYPTION),y)
+BOOT_ENCRYPTION := 1
+else
+BOOT_ENCRYPTION := 0
+endif
+endif
+
+ifeq ($(CONFIG_TAHITI_BLUETOOTH_BOOTLOADER),y)
+BOOT2_START_ADDRESS := $(shell echo $$(( $(CONFIG_SECURE_SRAM_BASE_ADDRESS) + $(CONFIG_M33_SECURE_BOOT_CODE_OFFSET) )))
+M33_BOOT2LOADER_FILE := $(REL_ROOTDIR)/iflash.bin
+BOOT2LOADER_PARTITION_FILE := partition_boot2.img
+BOOT2FLASH_PARTITION_FILE := partition_boot2flash.img
+BOOT2FLASH_PARTITION_BIN_FILE := partition_boot2flash.bin
+BOOT2LOADER_PARTITION := $(REL_ROOTDIR)/$(BOOT2LOADER_PARTITION_FILE)
+BOOT2FLASH_PARTITION := $(REL_ROOTDIR)/$(BOOT2FLASH_PARTITION_FILE)
+endif
+M33_BOOTLOADER_BIN := $(REL_ROOTDIR)/mcu_boot.bin
+M33_SYSTEM_BIN := $(REL_ROOTDIR)/mcu_s.bin
+M33_SYSTEM_BIN_NS := $(REL_ROOTDIR)/mcu_ns.bin
+BOOTLOADER_PARTITION_FILE := partition_boot.img
+SYSTEM_PARTITION_FILE := partition_system.img
+FLASH_PARTITION_WITH_CUS_FILE := partition_flash_with_cus.img
+FLASH_PARTITION_FILE := partition_flash.img
+BOOTLOADER_PARTITION := $(REL_ROOTDIR)/$(BOOTLOADER_PARTITION_FILE)
+SYSTEM_PARTITION := $(REL_ROOTDIR)/$(SYSTEM_PARTITION_FILE)
+FLASH_PARTITION_WITH_CUS := $(REL_ROOTDIR)/$(FLASH_PARTITION_WITH_CUS_FILE)
+FLASH_PARTITION := $(REL_ROOTDIR)/$(FLASH_PARTITION_FILE)
+
+ifeq ($(UNAME_O),Cygwin)
+	CHUNK_EXE := $(CAFBASEROOT)/platform/bin/chunk.exe
+else
+	CHUNK_EXE := $(CAFBASEROOT)/platform/bin/chunk-linux-x86_64
+endif
+
+CHUNK_TOOLS := ../platform/tahiti/tools/create_chunks.tcl
+MCU_DIR := ../platform/tahiti/m33/build
+ifeq ($(CONFIG_DSP_CAPE2),y)
+CAPEA_DIR := ../platform/tahiti/cape2/bld/cape_a
+CAPEB_DIR := ../platform/tahiti/cape2/bld/cape_b
+else
+ifeq ($(CONFIG_DSP_ASIP_CAPE2),y)
+CAPEA_DIR := ../platform/tahiti/asip/cape2/bld/cape2_a
+CAPEB_DIR := ../platform/tahiti/asip/cape2/bld/cape2_b
+endif
+endif
+CAPE_ROM_DIR := ../platform/tahiti/cape2/rom
+
+ifeq ($(CONFIG_DSP_ASIP_LLE),y)
+	LLE_IMG_NAME_A := lle_a
+	LLE_IMG_NAME_B := lle_b
+	LLE_DIR := ../platform/tahiti/asip/lle/bld/
+	LLE_IMG_DIR_A := lle_a/
+	LLE_IMG_DIR_B := lle_b/
+else
+	LLE_IMG_NAME_A := ANC_LLEA
+	LLE_IMG_NAME_B := ANC_LLEB
+	LLE_IMG_DIR_A  :=
+	LLE_IMG_DIR_B  :=
+	ifeq ($(CONFIG_CHIP_VERSION_Z1),y)
+
+	ifeq ($(CONFIG_LLE_ADAPTIVE_MONO_ANC_RELEASE_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/z1/Release/AdaptiveMonoANC
+	endif
+	ifeq ($(CONFIG_LLE_ADAPTIVE_MONO_ANC_BYPASS_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/z1/Release/AdaptiveMonoANC/Bypass
+	endif
+	ifeq ($(CONFIG_LLE_ADAPTIVE_MONO_ANC_WITH_FB_FIR_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/z1/Release/AdaptiveMonoANC/With_FB_FIR
+	endif
+	ifeq ($(CONFIG_LLE_FIXED_STEREO_ANC_RELEASE_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/z1/Release/FixedStereoANC
+	endif
+
+	endif
+
+	ifeq ($(CONFIG_CHIP_VERSION_A0),y)
+
+	ifeq ($(CONFIG_LLE_ADAPTIVE_MONO_ANC_RELEASE_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/AdaptiveMonoANC
+	endif
+	ifeq ($(CONFIG_LLE_ADAPTIVE_MONO_ANC_BYPASS_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/AdaptiveMonoANC/Bypass
+	endif
+	ifeq ($(CONFIG_LLE_ADAPTIVE_MONO_ANC_WITH_FB_FIR_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/AdaptiveMonoANC/With_FB_FIR
+	endif
+	ifeq ($(CONFIG_LLE_FIXED_STEREO_ANC_RELEASE_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/FixedStereoANC
+	endif
+	ifeq ($(CONFIG_LLE_FIXED_BIQUADS_ONLY_ANC_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/FixedBiquadsOnlyANC
+	endif
+	ifeq ($(CONFIG_LLE_NNNR_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/nnnr/Release/Nnnr
+	endif
+	ifeq ($(CONFIG_LLE_PSAP_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/psap/Release/PSAP
+	endif
+	ifeq ($(CONFIG_LLE_FULL_FEATURED_ANC_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/FullFeaturedANC
+	endif
+	ifeq ($(CONFIG_LLE_LOW_POWER_ANC_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/LowPowerANC
+	endif
+	ifeq ($(CONFIG_LLE_FULL_FEATURED_STEREO_ANC_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/StereoANC/FullFeaturedStereoANC
+	endif
+	ifeq ($(CONFIG_LLE_LOW_POWER_STEREO_ANC_STFT512_16K_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/StereoANC/LowPowerStereoANC
+	endif
+	ifeq ($(CONFIG_LLE_LOW_POWER_STEREO_ANC_STFT256_16K_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/StereoANC/LowPowerStereoANC_ENC3
+	endif
+	ifeq ($(CONFIG_LLE_LOW_POWER_STEREO_ANC_STFT512_32K_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/StereoANC/LowPowerStereoANC_32K_STFT512
+	endif
+
+	else ifeq ($(CONFIG_CHIP_VERSION_B0),y)
+	
+	ifeq ($(CONFIG_LLE_ADAPTIVE_MONO_ANC_RELEASE_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/AdaptiveMonoANC
+	endif
+	ifeq ($(CONFIG_LLE_ADAPTIVE_MONO_ANC_BYPASS_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/AdaptiveMonoANC/Bypass
+	endif
+	ifeq ($(CONFIG_LLE_ADAPTIVE_MONO_ANC_WITH_FB_FIR_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/AdaptiveMonoANC/With_FB_FIR
+	endif
+	ifeq ($(CONFIG_LLE_FIXED_STEREO_ANC_RELEASE_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/FixedStereoANC
+	endif
+	ifeq ($(CONFIG_LLE_FIXED_BIQUADS_ONLY_ANC_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/a0/Release/FixedBiquadsOnlyANC
+	endif
+	ifeq ($(CONFIG_LLE_NNNR_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/nnnr/Release/Nnnr
+	endif
+	ifeq ($(CONFIG_LLE_PSAP_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/psap/Release/PSAP
+	endif
+	ifeq ($(CONFIG_LLE_FULL_FEATURED_ANC_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/FullFeaturedANC
+	endif
+	ifeq ($(CONFIG_LLE_LOW_POWER_ANC_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/LowPowerANC
+	endif
+	ifeq ($(CONFIG_LLE_FULL_FEATURED_STEREO_ANC_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/StereoANC/FullFeaturedStereoANC
+	endif
+	ifeq ($(CONFIG_LLE_LOW_POWER_STEREO_ANC_STFT512_16K_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/StereoANC/LowPowerStereoANC
+	endif
+	ifeq ($(CONFIG_LLE_LOW_POWER_STEREO_ANC_STFT256_16K_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/StereoANC/LowPowerStereoANC_ENC3
+	endif
+	ifeq ($(CONFIG_LLE_LOW_POWER_STEREO_ANC_STFT512_32K_IMG),y)
+	LLE_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/tahiti_a0/Release/StereoANC/LowPowerStereoANC_32K_STFT512
+	endif
+
+	endif
+endif
+
+
+ifeq ($(CONFIG_DSP_LLE),y)
+LLEA_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/llea
+LLEB_DIR := ../libraries/cnxt/$(FLAVOR)_code/lle/lleb
+else
+ifeq ($(CONFIG_DSP_ASIP_LLE),y)
+LLEA_DIR := ../platform/tahiti/asip/lle/bld/lle_a
+LLEB_DIR := ../platform/tahiti/asip/lle/bld/lle_b
+endif
+endif
+HIFI3_DIR := ../platform/tahiti/hifi3/buildconfig
+
+CAPEA_CHUNK8 := $(CAPEA_DIR)/chunk8.bin
+CAPEB_CHUNK7 := $(CAPEA_DIR)/chunk7.bin
+CAPEA_ROM := $(CAPE_ROM_DIR)/roa_16220.bin
+CAPEB_ROM := $(CAPE_ROM_DIR)/rob_26288.bin
+
+CHUNK_FILE0 :=
+CHUNK_FILE1 :=
+CHUNK_FILE2 :=
+CHUNK_FILE3 :=
+CHUNK_FILE4 :=
+CHUNK_FILE5 :=
+CHUNK_FILE6 :=
+CHUNK_FILE7 :=
+CHUNK_FILE8 :=
+
+ifeq ($(CONFIG_INCL_CHUNK_SFS_IN_IMG),y)
+SFS_DIR := ../bld$(if $(CONFIG),/$(CONFIG))/release/$(FWDIR)
+CHUNK_SFS := $(SFS_DIR)/chunk_sfs.bin
+CHUNK_SFS_OPTION := $(CONFIG_PARTITION_SYSTEM_SFS_START),$(CONFIG_PARTITION_SYSTEM_SFS_SIZE),0,$(CHUNK_SFS)
+ifeq ($(CONFIG_MCU_DRV_SFS_CUSTOM0_PARTITION),y)
+CHUNK_CUSTOM0 := $(SFS_DIR)/chunk_custom0.bin
+PARTITION_CUS0_FILE := $(REL_ROOTDIR)/partition_cus0.bin
+CHUNK_CUSTOM0_SIZE_IN_BYTES := $(shell echo $$(( $(CONFIG_PARTITION_CUSTOM0_SIZE) * 4096 )))
+endif
+else
+CHUNK_SFS :=
+endif
+
+ifeq ($(CONFIG_MCU_M33_SCATTER_LOADING),y)
+CHUNK_FILE0 := $(REL_ROOTDIR)/chunk_type0.bin
+CHUNK_FILE1 := $(REL_ROOTDIR)/chunk_type1.bin
+else
+endif
+
+ifeq ($(CONFIG_DSP_CAPE2),y)
+ifeq ($(CONFIG_CAPE2_SINGLE_LINK),y)
+CHUNK_FILE4 := $(REL_ROOTDIR)/chunk_type4.bin
+else
+CHUNK_FILE2 := $(REL_ROOTDIR)/chunk_type2.bin
+ifeq ($(CONFIG_BUILD_CAPE2_B),y)
+CHUNK_FILE3 := $(REL_ROOTDIR)/chunk_type3.bin
+endif
+endif
+else
+ifeq ($(CONFIG_DSP_ASIP_CAPE2),y)
+CHUNK_FILE2 := $(REL_ROOTDIR)/chunk_type2.bin
+CHUNK_FILE3 := $(REL_ROOTDIR)/chunk_type3.bin
+endif
+endif
+
+ifeq ($(CONFIG_DSP_LLE),y)
+ifeq ($(CONFIG_DSP_LLE_A),y)
+CHUNK_FILE5 := $(REL_ROOTDIR)/chunk_type5.bin
+endif
+ifeq ($(CONFIG_DSP_LLE_B),y)
+CHUNK_FILE6 := $(REL_ROOTDIR)/chunk_type6.bin
+endif
+else
+ifeq ($(CONFIG_DSP_ASIP_LLE),y)
+CHUNK_FILE5 := $(REL_ROOTDIR)/chunk_type5.bin
+CHUNK_FILE6 := $(REL_ROOTDIR)/chunk_type6.bin
+endif
+endif
+ifeq ($(CONFIG_DSP_ENABLE_BUILD),y)
+CHUNK_FILE8 := $(REL_ROOTDIR)/chunk_type8.bin
+else
+endif
+CHUNK_LIST0 := 0,0,$(CHUNK_FILE0)
+CHUNK_LIST1 := 1,0,$(CHUNK_FILE1)
+CHUNK_LIST2 := 2,0,$(CHUNK_FILE2)
+CHUNK_LIST3 := 3,0,$(CHUNK_FILE3)
+CHUNK_LIST4 := 4,0,$(CHUNK_FILE4)
+CHUNK_LIST5 := 5,0,$(CHUNK_FILE5)
+CHUNK_LIST6 := 6,0,$(CHUNK_FILE6)
+CHUNK_LIST7 := 7,0,$(CHUNK_FILE7)
+CHUNK_LIST8 := 8,0,$(CHUNK_FILE8)
+
+ifeq ($(CONFIG_MCU_DRV_MAIN_SFS_ALIGN_BYTES),y)
+SFS_ALIGN_UNIT := "bytes"
+else
+SFS_ALIGN_UNIT := "4K"
+endif
+
+CHUNK_SFS_SIZE_IN_BYTES := $(shell echo $$(( $(CONFIG_PARTITION_SYSTEM_SFS_SIZE) * 4096 )))
+BOOT_RUN_ADDRESS :=  $(shell echo $$(( $(CONFIG_SECURE_SRAM_BASE_ADDRESS) + $(CONFIG_M33_SECURE_BOOT_CODE_OFFSET) )))
+BOOT_LOAD_ADDRESS := $(shell echo $$(( $(CONFIG_SECURE_SRAM_BASE_ADDRESS) + $(CONFIG_M33_SECURE_BOOT_CODE_OFFSET) )))
+
+SYSTEM1_READY := CONFIG_PARTITION_SYSTEM1_START
+SYSTEM1_PARTITION := 2,0,$(CONFIG_PARTITION_SYSTEM1_START),$(CONFIG_PARTITION_SYSTEM_SIZE)
+
+
+##Validation check
+#Check if IMAGE+SFS EXCEED SYSTEM SIZE
+ifeq ($(shell expr $(CONFIG_PARTITION_SYSTEM_SFS_START) + $(CONFIG_PARTITION_SYSTEM_SFS_SIZE) \> $(CONFIG_PARTITION_SYSTEM_SIZE)), 1)
+$(info MAIN SFS EXCEED SYSTEM IMAGE)
+$(error exit packaging)
+endif
+
+ifeq ($(shell expr $(CONFIG_PARTITION_SYSTEM1_START) \> 0), 1)
+
+ifeq ($(CONFIG_MCU_DRV_SFS_CUSTOM0_PARTITION),y)
+
+#Check if SYSTEM1 EXCEED CUSTOM0
+ifeq ($(shell expr $(CONFIG_PARTITION_SYSTEM1_START) - $(CONFIG_PARTITION_BOOTLOADER_START) + $(CONFIG_PARTITION_SYSTEM_SIZE) \> $(CONFIG_PARTITION_CUSTOM0_START)), 1)
+$(info SYSTEM1 EXCEEDED CUSTOM0)
+$(error exit packaging)
+endif
+
+#Check if (SYSTEM1 + CUSTOM0) EXCEED PERSISTENT
+ifeq ($(CONFIG_MCU_DRV_SFS_PERSIST_PARTITION),y)
+ifeq ($(shell expr $(CONFIG_PARTITION_SYSTEM1_START) - $(CONFIG_PARTITION_BOOTLOADER_START) + $(CONFIG_PARTITION_SYSTEM_SIZE) + $(CONFIG_PARTITION_CUSTOM0_SIZE) \> $(CONFIG_PARTITION_PERSISTENT_START)), 1)
+$(info SYSTEM1+CUSTOM0 EXCEEDED PERSISTENT)
+$(error exit packaging)
+endif
+endif   #End ifeq ($(CONFIG_MCU_DRV_SFS_PERSIST_PARTITION),y)
+endif   #End ifeq ($(CONFIG_MCU_DRV_SFS_CUSTOM0_PARTITION),y)
+
+#Check if SYSTEM1 EXCEED PERSISTENT
+ifeq ($(CONFIG_MCU_DRV_SFS_PERSIST_PARTITION),y)
+ifeq ($(shell expr $(CONFIG_PARTITION_SYSTEM1_START) - $(CONFIG_PARTITION_BOOTLOADER_START) + $(CONFIG_PARTITION_SYSTEM_SIZE) \> $(CONFIG_PARTITION_PERSISTENT_START)), 1)
+$(info SYSTEM1 EXCEEDED PERSISTENT)
+$(error exit packaging)
+endif
+endif   #End ifeq ($(CONFIG_MCU_DRV_SFS_PERSIST_PARTITION),y)
+
+else
+
+ifeq ($(CONFIG_MCU_DRV_SFS_CUSTOM0_PARTITION),y)
+#Check if SYSTEM0 EXCEED CUSTOM0
+ifeq ($(shell expr $(CONFIG_PARTITION_SYSTEM0_START) - $(CONFIG_PARTITION_BOOTLOADER_START) + $(CONFIG_PARTITION_SYSTEM_SIZE) \> $(CONFIG_PARTITION_CUSTOM0_START)), 1)
+$(info SYSTEM1 EXCEEDED CUSTOM0)
+$(error exit packaging)
+endif
+
+#Check if (SYSTEM0 + CUSTOM0) EXCEED PERSISTENT
+ifeq ($(CONFIG_MCU_DRV_SFS_PERSIST_PARTITION),y)
+ifeq ($(shell expr $(CONFIG_PARTITION_SYSTEM0_START) - $(CONFIG_PARTITION_BOOTLOADER_START) + $(CONFIG_PARTITION_SYSTEM_SIZE) + $(CONFIG_PARTITION_PERSISTENT_SIZE) \> $(CONFIG_PARTITION_PERSISTENT_START)), 1)
+$(info SYSTEM0+CUSTOM0 EXCEEDED PERSISTENT)
+$(error exit packaging)
+endif
+endif   #End ifeq ($(CONFIG_MCU_DRV_SFS_PERSIST_PARTITION),y)
+endif   #End ifeq ($(CONFIG_MCU_DRV_SFS_CUSTOM0_PARTITION),y)
+
+#Check if SYSTEM0 EXCEED PERSISTENT
+ifeq ($(CONFIG_MCU_DRV_SFS_PERSIST_PARTITION),y)
+ifeq ($(shell expr $(CONFIG_PARTITION_SYSTEM0_START) - $(CONFIG_PARTITION_BOOTLOADER_START) + $(CONFIG_PARTITION_SYSTEM_SIZE) \> $(CONFIG_PARTITION_PERSISTENT_START)), 1)
+$(info SYSTEM0 EXCEEDED PERSISTENT)
+$(error exit packaging)
+endif
+endif   #End ifeq ($(CONFIG_MCU_DRV_SFS_PERSIST_PARTITION),y)
+endif   #End ifeq ($(shell expr $(CONFIG_PARTITION_SYSTEM1_START) \> 0), 1)
+
+
+package_sfs: $(REL_FWDIR) \
+             $(BLD_TMPDIR) \
+             $(blobs_bin) $(scripts_bin) $(int_scripts_bin) $(wavs_bin) $(cus0_bin) $(INDEX_FILE)
+	$(V)$(ECHO_ESC) "\n\n====================================================="
+	echo "Chunk MAIN SFS generation"
+	$(CREATE_FS_TOOL) -fs_create -fs_path $(REL_FWDIR) \
+                          -fs_name chunk_sfs.bin \
+                          -fs_size $(CHUNK_SFS_SIZE_IN_BYTES) \
+                          -files_align $(SFS_ALIGN_UNIT) \
+                          -files $(int_scripts_bin) $(scripts_bin) $(blobs_bin) $(wavs_bin) $(INDEX_FILE)
+ifeq ($(CONFIG_MCU_DRV_SFS_CUSTOM0_PARTITION),y)
+##TODO: How to add INDX for CUSTOM0?
+	echo "Chunk CUSTOM0 SFS generation"
+	$(CREATE_FS_TOOL) -fs_create -fs_path $(REL_FWDIR) \
+                          -fs_name chunk_custom0.bin \
+                          -fs_size $(CHUNK_CUSTOM0_SIZE_IN_BYTES) \
+                          -files_align $(SFS_ALIGN_UNIT) \
+                          -files $(cus0_bin)
+endif
+
+package_tahiti_platform_in_sdk: $(REL_FWDIR)	\
+        $(if $(CONFIG_INCL_CHUNK_SFS_IN_IMG), package_sfs)
+	cp $(CAFBASEROOT)/prebuilt/* $(REL_FWDIR)
+	#chmod -R 777 $(REL_FWDIR)
+ifneq (,$(findstring tahiti/hifi3,$(platforms)))
+	echo "hifi3 package"
+	$(CHUNK_TOOLS) -o $(HIFI3_DIR) -d $(HIFI3_DIR)/hifi3_firmware -p 8
+	cp -f $(HIFI3_DIR)/chunk_type8.bin $(REL_FWDIR)
+endif
+ifneq (,$(findstring tahiti/m33,$(platforms)))
+	echo "m33 package"
+	$(CHUNK_TOOLS) -o $(MCU_DIR) -ms $(MCU_DIR)/mcu_ns.elf -p 0
+	cp -f $(MCU_DIR)/chunk_type0.bin $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_ns.bin $(REL_FWDIR)
+endif
+	install -m 755 $(I2C_FLASH_TOOLS) $(REL_FWDIR)
+
+	$(ECHO_ESC) "=====================================================\n"
+	echo "Packaging for i2c flash"
+	$(ECHO_ESC) "=====================================================\n"
+	rm -f $(SYSTEM_PARTITION)
+	$(ECHO_ESC) "== System partition file ==\n"
+ifeq ($(CONFIG_MCU_M33_SCATTER_LOADING),y)
+	$(CHUNK_EXE) -T 0,$(M33_SYSTEM_BIN) -t s -s 0 -e $(CONFIG_PARTITION_SYSTEM_SIZE) -o $(SYSTEM_PARTITION) -G l=0x30000000,r=0x30000000 -C $(if $(CHUNK_FILE0),$(CHUNK_LIST0)),$(if $(CHUNK_FILE1),$(CHUNK_LIST1)),$(if $(CHUNK_FILE2),$(CHUNK_LIST2)),$(if $(CHUNK_FILE3),$(CHUNK_LIST3)),$(if $(CHUNK_FILE4),$(CHUNK_LIST4)),$(if $(CHUNK_FILE5),$(CHUNK_LIST5)),$(if $(CHUNK_FILE6),$(CHUNK_LIST6)),$(if $(CHUNK_FILE7),$(CHUNK_LIST7)),$(if $(CHUNK_FILE8),$(CHUNK_LIST8)) $(if $(CHUNK_SFS), -F $(CHUNK_SFS_OPTION)) -V $(CONFIG_VERSION_Z),$(CONFIG_VERSION_Y),$(CONFIG_VERSION_X),$(CONFIG_VERSION_W) -A v=$(CONFIG_TAHITI_VENDOR_ID),p=$(CONFIG_TAHITI_PRODUCT_ID)
+else
+	$(CHUNK_EXE) -T 2,$(M33_SYSTEM_BIN) -t s -s 0 -e $(CONFIG_PARTITION_SYSTEM_SIZE) -o $(SYSTEM_PARTITION) -G l=0x30000000,r=0x30000000 -C $(if $(CHUNK_FILE1),$(CHUNK_LIST1)),$(if $(CHUNK_FILE2),$(CHUNK_LIST2)),$(if $(CHUNK_FILE3),$(CHUNK_LIST3)),$(if $(CHUNK_FILE4),$(CHUNK_LIST4)),$(if $(CHUNK_FILE5),$(CHUNK_LIST5)),$(if $(CHUNK_FILE6),$(CHUNK_LIST6)),$(if $(CHUNK_FILE7),$(CHUNK_LIST7)),$(if $(CHUNK_FILE8),$(CHUNK_LIST8)) $(if $(CHUNK_SFS), -F $(CHUNK_SFS_OPTION)) -V $(CONFIG_VERSION_Z),$(CONFIG_VERSION_Y),$(CONFIG_VERSION_X),$(CONFIG_VERSION_W) -A v=$(CONFIG_TAHITI_VENDOR_ID),p=$(CONFIG_TAHITI_PRODUCT_ID)
+endif
+	
+	$(ECHO_ESC) "Done\n"
+	$(ECHO_ESC) "=====================================================\n"
+ifeq ($(CONFIG_MCU_M33_ROM),y)
+package_tahiti_platform: $(REL_FWDIR)	\
+						 $(if $(CONFIG_MCU_ENABLE_BUILD),$(CAFBASEROOT)/platform/tahiti/m33/build/mcu_rom.elf)
+	$(ECHO_ESC) "\nCopying Images"
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_rom.bin $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_rom.rcf $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_rom.coe $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_rom.elf $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_rom.map $(REL_FWDIR)
+else
+package_tahiti_platform:$(REL_FWDIR)	\
+						$(if $(CONFIG_DSP_CAPE2),$(CAFBASEROOT)/platform/tahiti/cape2/bld/cape_a/tahiti_cape)	\
+						$(if $(CONFIG_DSP_ASIP_CAPE2),$(CAFBASEROOT)/platform/tahiti/asip/cape2/bld/cape2_a/cape2_a)	\
+						$(if $(CONFIG_BUILD_CAPE2_B),$(CAFBASEROOT)/platform/tahiti/cape2/bld/cape_b/tahiti_cape)	\
+						$(if $(CONFIG_DSP_ASIP_CAPE2),$(CAFBASEROOT)/platform/tahiti/asip/cape2/bld/cape2_b/cape2_b)	\
+						$(if $(CONFIG_MCU_ENABLE_BUILD),$(CAFBASEROOT)/platform/tahiti/m33/build/mcu_boot.elf)	\
+						$(if $(CONFIG_MCU_ENABLE_BUILD),$(CAFBASEROOT)/platform/tahiti/m33/build/mcu_ns.elf)	\
+						$(if $(CONFIG_MCU_ENABLE_BUILD),$(CAFBASEROOT)/platform/tahiti/m33/build/mcu_s.elf)	\
+						$(if $(CONFIG_MCU_ENABLE_BUILD),$(CAFBASEROOT)/platform/tahiti/m33/build/iflash.bin)	\
+						$(if $(CONFIG_DSP_ENABLE_BUILD),$(CAFBASEROOT)/platform/tahiti/hifi3/buildconfig/hifi3_firmware)	\
+						$(if $(CONFIG_INCL_CHUNK_SFS_IN_IMG), package_sfs)
+	$(ECHO_ESC) "\nCopying Images"
+ifeq ($(CONFIG_DSP_CAPE2),y)
+ifeq ($(CONFIG_CAPE2_SINGLE_LINK),y)
+	$(CHUNK_TOOLS) -o $(CAPEA_DIR) -d $(CAPEA_DIR)/tahiti_cape -p 4 -a 0x1000
+	cp -f $(CAPEA_DIR)/chunk_type4.bin $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/cape2/bld/cape_a/tahiti_cape $(REL_FWDIR)
+	#chmod ug+wr $(REL_FWDIR)/tahiti_cape
+ifeq ($(CONFIG_S0_ROM_BUILD),y)
+#check_rom_files:
+	if cmp -s $(CAPEA_CHUNK8) $(CAPEA_ROM); then \
+		$(ECHO_ESC) "\n=====================================================\n"
+		$(ECHO_ESC) "CAPE-A ROM FILE IS EXACTLY THE SAME"; \
+		$(ECHO_ESC) "\n=====================================================\n"
+	else \
+		$(ECHO_ESC) "\n=====================================================\n"
+		$(ECHO_ESC) "\nCAPE-A ROM FILE IS DIFFERENT\n"; \
+		$(ECHO_ESC) "THE BUILD HAS FAILED. CHECK IF ROM FILES HAVE BEEN CHANGED BY THE DSP\n"; \
+		$(ECHO_ESC) "\n====================================================="
+		exit 1; \
+	fi;
+
+	if cmp -s $(CAPEB_CHUNK7) $(CAPEB_ROM); then \
+		$(ECHO_ESC) "\n=====================================================\n"
+		$(ECHO_ESC) "CAPE-B ROM FILE IS EXACTLY THE SAME"; \
+		$(ECHO_ESC) "\n=====================================================\n"
+	else \
+		$(ECHO_ESC) "\n=====================================================\n"
+		$(ECHO_ESC) "\nCAPE-B ROM FILE IS DIFFERENT\n"; \
+		$(ECHO_ESC) "THE BUILD HAS FAILED. CHECK IF ROM FILES HAVE BEEN CHANGED BY THE DSP\n"; \
+		$(ECHO_ESC) "\n=====================================================\n"
+		exit 1; \
+	fi;
+endif
+
+else
+	$(CHUNK_TOOLS) -o $(CAPEA_DIR) -d $(CAPEA_DIR)/tahiti_cape -p 2 -a 0x1000
+	cp -f $(CAPEA_DIR)/chunk_type2.bin $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/cape2/bld/cape_a/tahiti_cape $(REL_FWDIR)/tahiti_cape_a
+ifeq ($(CONFIG_BUILD_CAPE2_B),y)
+	$(CHUNK_TOOLS) -o $(CAPEB_DIR) -d $(CAPEB_DIR)/tahiti_cape -p 3 -a 0x1000
+	cp -f $(CAPEB_DIR)/chunk_type3.bin $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/cape2/bld/cape_b/tahiti_cape $(REL_FWDIR)/tahiti_cape_b
+endif
+endif
+else
+# !CONFIG_DSP_CAPE2
+ifeq ($(CONFIG_DSP_ASIP_CAPE2),y)
+	$(CHUNK_TOOLS) -o $(CAPEA_DIR) -d $(CAPEA_DIR)/cape2_a -p 2 -a 0x1000
+	cp -f $(CAPEA_DIR)/chunk_type2.bin $(REL_FWDIR)
+	#cp -f $(CAFBASEROOT)/platform/tahiti/asip/cape2/bld/cape2_a/cape2_a $(REL_FWDIR)/cape2_a
+
+	$(CHUNK_TOOLS) -o $(CAPEB_DIR) -d $(CAPEB_DIR)/cape2_b -p 3 -a 0x1000
+	cp -f $(CAPEB_DIR)/chunk_type3.bin $(REL_FWDIR)
+	#cp -f $(CAFBASEROOT)/platform/tahiti/asip/cape2/bld/cape2_b/cape2_b $(REL_FWDIR)/cape2_b
+endif
+endif
+
+ifeq ($(CONFIG_DSP_LLE),y)
+ifeq ($(CONFIG_DSP_LLE_A),y)
+	rm -f -r $(LLEA_DIR)
+	mkdir $(LLEA_DIR)
+	$(CHUNK_TOOLS) -o $(LLEA_DIR) -d $(LLE_DIR)/$(LLE_IMG_DIR_A)$(LLE_IMG_NAME_A) -p 5 -a 0x1000
+	cp -f $(LLEA_DIR)/chunk_type5.bin $(REL_FWDIR)
+	cp -f $(LLE_DIR)/$(LLE_IMG_DIR_A)$(LLE_IMG_NAME_A) $(REL_FWDIR)
+	#chmod ug+wr $(REL_FWDIR)/ANC_LLEA
+endif
+ifeq ($(CONFIG_DSP_LLE_B),y)
+	rm -f -r $(LLEB_DIR)
+	mkdir $(LLEB_DIR)
+	$(CHUNK_TOOLS) -o $(LLEB_DIR) -d $(LLE_DIR)/$(LLE_IMG_DIR_B)$(LLE_IMG_NAME_B) -p 6 -a 0x1000
+	cp -f $(LLEB_DIR)/chunk_type6.bin $(REL_FWDIR)
+	cp -f $(LLE_DIR)/$(LLE_IMG_DIR_B)$(LLE_IMG_NAME_B) $(REL_FWDIR)
+	#chmod ug+wr $(REL_FWDIR)/ANC_LLEB	
+endif
+else
+ifeq ($(CONFIG_DSP_ASIP_LLE),y)
+	#rm -f -r $(LLEA_DIR)
+	#mkdir $(LLEA_DIR)
+
+	$(CHUNK_TOOLS) -o $(LLEA_DIR) -d $(LLE_DIR)/$(LLE_IMG_DIR_A)$(LLE_IMG_NAME_A) -p 5 -a 0x1000
+	cp -f $(LLEA_DIR)/chunk_type5.bin $(REL_FWDIR)
+	#cp -f $(LLE_DIR)/$(LLE_IMG_DIR_A)$(LLE_IMG_NAME_A) $(REL_FWDIR)
+
+	#rm -f -r $(LLEB_DIR)
+	#mkdir $(LLEB_DIR)
+	$(CHUNK_TOOLS) -o $(LLEB_DIR) -d $(LLE_DIR)/$(LLE_IMG_DIR_B)$(LLE_IMG_NAME_B) -p 6 -a 0x1000
+	cp -f $(LLEB_DIR)/chunk_type6.bin $(REL_FWDIR)
+	#cp -f $(LLE_DIR)/$(LLE_IMG_DIR_B)$(LLE_IMG_NAME_B) $(REL_FWDIR)
+endif
+endif
+
+ifeq ($(CONFIG_MCU_ENABLE_BUILD),y)
+ifeq ($(CONFIG_TAHITI_SEC_IMAGE),y)
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_boot_enc.bin $(REL_FWDIR)/mcu_boot.bin
+else
+	cp -r $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_boot.bin $(REL_FWDIR)
+endif
+ifeq ($(CONFIG_MCU_M33_SCATTER_LOADING),y)
+	$(CHUNK_TOOLS) -o $(MCU_DIR)/ns -ms $(MCU_DIR)/mcu_ns.elf -p 0
+	cp -f $(MCU_DIR)/ns/chunk_type0.bin $(REL_FWDIR)
+	$(CHUNK_TOOLS) -o $(MCU_DIR)/s -ms $(MCU_DIR)/mcu_s.elf -p 1
+	cp -f $(MCU_DIR)/s/chunk_type1.bin $(REL_FWDIR)
+endif
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_ns.bin $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/mcu_s.bin $(REL_FWDIR)
+ifeq ($(CONFIG_TAHITI_SEC_IMAGE),y)
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/iflash_enc.bin $(REL_FWDIR)/iflash.bin
+else
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/build/iflash.bin $(REL_FWDIR)
+endif
+	cp -f $(CAFBASEROOT)/platform/tahiti/m33/rtos/frtos/m33_freeRTOS_License.txt $(REL_FWDIR)
+endif
+ifeq ($(CONFIG_DSP_ENABLE_BUILD),y)
+	$(CHUNK_TOOLS) -o $(HIFI3_DIR) -d $(HIFI3_DIR)/hifi3_firmware -p 8
+	cp -f $(HIFI3_DIR)/chunk_type8.bin $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/hifi3/buildconfig/hifi3_firmware $(REL_FWDIR)
+	cp -f $(CAFBASEROOT)/platform/tahiti/hifi3/freertos/hifi3_freeRTOS_License.txt $(REL_FWDIR)
+	#chmod ug+wr $(REL_FWDIR)/hifi3_firmware	
+endif
+
+	install -m 755 $(I2C_FLASH_TOOLS) $(REL_FWDIR)	
+
+	$(ECHO_ESC) "=====================================================\n"
+	echo "Packaging for i2c flash"
+	$(ECHO_ESC) "=====================================================\n"
+	rm -f $(BOOTLOADER_PARTITION)
+	rm -f $(SYSTEM_PARTITION)
+	$(ECHO_ESC) "== Bootloader partition file ==\n"
+ifeq ($(CONFIG_TAHITI_SEC_IMAGE),y)
+	$(CHUNK_EXE) -T 1,$(M33_BOOTLOADER_BIN) -t l -s $(CONFIG_PARTITION_BOOTLOADER_START) -e $(CONFIG_PARTITION_BOOTLOADER_SIZE) -o $(BOOTLOADER_PARTITION) -G l=$(BOOT_LOAD_ADDRESS),r=$(BOOT_RUN_ADDRESS) -P 1,0,$(CONFIG_PARTITION_BOOTLOADER_START),$(CONFIG_PARTITION_BOOTLOADER_SIZE),2,0,$(CONFIG_PARTITION_SYSTEM0_START),$(CONFIG_PARTITION_SYSTEM_SIZE),$(if $(SYSTEM1_READY),$(SYSTEM1_PARTITION)), -D e=$(BOOT_ENCRYPTION),v=$(CONFIG_TAHITI_SEC_VALIDITY) -V $(CONFIG_VERSION_Z),$(CONFIG_VERSION_Y),$(CONFIG_VERSION_X),$(CONFIG_VERSION_W) -B $(CONFIG_TAHITI_BOOTLOADER_VERSION) -A v=$(CONFIG_TAHITI_VENDOR_ID),p=$(CONFIG_TAHITI_PRODUCT_ID)
+else
+	$(CHUNK_EXE) -T 1,$(M33_BOOTLOADER_BIN) -t l -s $(CONFIG_PARTITION_BOOTLOADER_START) -e $(CONFIG_PARTITION_BOOTLOADER_SIZE) -o $(BOOTLOADER_PARTITION) -G l=$(BOOT_LOAD_ADDRESS),r=$(BOOT_RUN_ADDRESS) -P 1,0,$(CONFIG_PARTITION_BOOTLOADER_START),$(CONFIG_PARTITION_BOOTLOADER_SIZE),2,0,$(CONFIG_PARTITION_SYSTEM0_START),$(CONFIG_PARTITION_SYSTEM_SIZE),$(if $(SYSTEM1_READY),$(SYSTEM1_PARTITION)), -V $(CONFIG_VERSION_Z),$(CONFIG_VERSION_Y),$(CONFIG_VERSION_X),$(CONFIG_VERSION_W) -B $(CONFIG_TAHITI_BOOTLOADER_VERSION) -A v=$(CONFIG_TAHITI_VENDOR_ID),p=$(CONFIG_TAHITI_PRODUCT_ID)
+endif
+ifeq ($(CONFIG_TAHITI_BLUETOOTH_BOOTLOADER),y)
+	$(CHUNK_EXE) -T 1,$(M33_BOOT2LOADER_FILE) -t l -s $(CONFIG_PARTITION_BOOTLOADER_START) -e $(CONFIG_PARTITION_BOOTLOADER_SIZE) -o $(BOOT2LOADER_PARTITION) -G l=$(BOOT2_START_ADDRESS),r=$(BOOT2_START_ADDRESS) -P 1,0,$(CONFIG_PARTITION_BOOTLOADER_START),$(CONFIG_PARTITION_BOOTLOADER_SIZE),2,0,$(CONFIG_PARTITION_SYSTEM0_START),$(CONFIG_PARTITION_SYSTEM_SIZE),$(if $(SYSTEM1_READY),$(SYSTEM1_PARTITION)), -D e=$(BOOT_ENCRYPTION),v=$(CONFIG_TAHITI_SEC_VALIDITY) -V $(CONFIG_VERSION_Z),$(CONFIG_VERSION_Y),$(CONFIG_VERSION_X),$(CONFIG_VERSION_W) -B $(CONFIG_TAHITI_BOOTLOADER_VERSION) -A v=$(CONFIG_TAHITI_VENDOR_ID),p=$(CONFIG_TAHITI_PRODUCT_ID)
+endif
+	$(ECHO_ESC) "== System partition file ==\n"
+	install -m 755 $(CAFBASEROOT)/platform/bin/chunk.exe ${REL_FWDIR}
+ifeq ($(CONFIG_MCU_M33_SCATTER_LOADING),y)
+	$(CHUNK_EXE) -T 0,$(M33_SYSTEM_BIN) -t s -s 0 -e $(CONFIG_PARTITION_SYSTEM_SIZE) -o $(SYSTEM_PARTITION) -G l=0x30000000,r=0x30000000 -C $(if $(CHUNK_FILE0),$(CHUNK_LIST0)),$(if $(CHUNK_FILE1),$(CHUNK_LIST1)),$(if $(CHUNK_FILE2),$(CHUNK_LIST2)),$(if $(CHUNK_FILE3),$(CHUNK_LIST3)),$(if $(CHUNK_FILE4),$(CHUNK_LIST4)),$(if $(CHUNK_FILE5),$(CHUNK_LIST5)),$(if $(CHUNK_FILE6),$(CHUNK_LIST6)),$(if $(CHUNK_FILE7),$(CHUNK_LIST7)),$(if $(CHUNK_FILE8),$(CHUNK_LIST8)) $(if $(CHUNK_SFS), -F $(CHUNK_SFS_OPTION)) -V $(CONFIG_VERSION_Z),$(CONFIG_VERSION_Y),$(CONFIG_VERSION_X),$(CONFIG_VERSION_W) -A v=$(CONFIG_TAHITI_VENDOR_ID),p=$(CONFIG_TAHITI_PRODUCT_ID)
+else
+	$(CHUNK_EXE) -T 2,$(M33_SYSTEM_BIN) -t s -s 0 -e $(CONFIG_PARTITION_SYSTEM_SIZE) -o $(SYSTEM_PARTITION) -G l=0x30000000,r=0x30000000 -C $(if $(CHUNK_FILE1),$(CHUNK_LIST1)),$(if $(CHUNK_FILE2),$(CHUNK_LIST2)),$(if $(CHUNK_FILE3),$(CHUNK_LIST3)),$(if $(CHUNK_FILE4),$(CHUNK_LIST4)),$(if $(CHUNK_FILE5),$(CHUNK_LIST5)),$(if $(CHUNK_FILE6),$(CHUNK_LIST6)),$(if $(CHUNK_FILE7),$(CHUNK_LIST7)),$(if $(CHUNK_FILE8),$(CHUNK_LIST8)) $(if $(CHUNK_SFS), -F $(CHUNK_SFS_OPTION)) -V $(CONFIG_VERSION_Z),$(CONFIG_VERSION_Y),$(CONFIG_VERSION_X),$(CONFIG_VERSION_W) -A v=$(CONFIG_TAHITI_VENDOR_ID),p=$(CONFIG_TAHITI_PRODUCT_ID)
+endif
+
+	cat $(BOOTLOADER_PARTITION) $(SYSTEM_PARTITION) > $(FLASH_PARTITION)
+ifeq ($(CONFIG_MCU_DRV_SFS_CUSTOM0_PARTITION),y)
+	cp -f $(FLASH_PARTITION) $(FLASH_PARTITION_WITH_CUS)
+	dd if=/dev/zero ibs=4k count=$(shell echo $$(($(CONFIG_PARTITION_CUSTOM0_START) - $(CONFIG_PARTITION_BOOTLOADER_SIZE) - $(CONFIG_PARTITION_SYSTEM_SIZE)))) | tr "\000" "\377" >> $(FLASH_PARTITION_WITH_CUS)
+	cat $(CHUNK_CUSTOM0) >> $(FLASH_PARTITION_WITH_CUS)
+	cp -f $(CHUNK_CUSTOM0) $(PARTITION_CUS0_FILE)
+endif
+ifeq ($(CONFIG_TAHITI_BLUETOOTH_BOOTLOADER),y)
+	cat $(BOOT2LOADER_PARTITION) $(SYSTEM_PARTITION) > $(BOOT2FLASH_PARTITION)
+	cat $(BOOT2FLASH_PARTITION) > $(REL_ROOTDIR)/$(BOOT2FLASH_PARTITION_BIN_FILE)
+endif
+	$(ECHO_ESC) "Done\n"
+	$(ECHO_ESC) "=====================================================\n"
+endif
+endif
+
+package_niue_platform: $(REL_FWDIR) \
+                       $(BLD_TMPDIR) \
+                       $(if $(CONFIG_INCL_FILESYSTEM_IN_CHUNK_TABLE),$(blobs_bin) $(scripts_bin) $(int_scripts_bin) $(INDEX_FILE) ) \
+                       $(CAFBASEROOT)/platform/niue/build/hifi4_dsp.elf \
+                       $(if $(CONFIG_MCU_ENABLE_BUILD),$(CAFBASEROOT)/platform/niue/build/mcu_s.elf) \
+                       $(if $(CONFIG_MCU_ENABLE_BUILD),$(CAFBASEROOT)/platform/niue/build/mcu_ns.elf) \
+                       $(and $(CONFIG_MCU_ENABLE_BUILD),$(CONFIG_SCATTER_BOOT_LOAD_USING_BCM3),$(CAFBASEROOT)/platform/niue/build/chunk_table.bin)
+	$(V)$(ECHO_ESC) "\n\n====================================================="
+	echo "Packaging niue platform"
+	date
+	$(ECHO_ESC) "=====================================================\n"
+	cp -r $(CAFBASEROOT)/platform/niue/build/* $(REL_FWDIR)
+ifeq ($(CONFIG_INCL_FILESYSTEM_IN_CHUNK_TABLE),y)
+	$(CREATE_FS_TOOL) -fs_create -fs_path $(REL_FWDIR) -fs_name chunk_sfs.bin -fs_size $(CONFIG_FILESYSTEM_SIZE_IN_CHUNK_TABLE) -files_align $(SFS_ALIGN_UNIT) -files $(int_scripts_bin) $(scripts_bin) $(blobs_bin) $(INDEX_FILE)
+endif
+ifneq ("$(CONFIG_HOST_CODE_FLASH_IMAGE_TOOL)","") 
+	cp -r $(CAFBASEROOT)/host/demo/flash_image_tool/flash_image_tool.exe $(REL_FWDIR)
+endif 
+
+$(INDEX_FILE):$(scripts_bin)
+	$(RM) $@
+	echo  $(scripts_bin)
+	$(foreach scr, $(scripts_bin), $(if $(filter Z%,$(call script_bin_id,$(scr))),echo $(call script_bin_id,$(scr)) >> $(BLD_TMPDIR)/index.txt;))
+	$(foreach scr, $(scripts_bin), $(if $(filter Y%,$(call script_bin_id,$(scr))),echo $(call script_bin_id,$(scr)) >> $(BLD_TMPDIR)/index.txt;))
+	$(foreach scr, $(scripts_bin), $(if $(filter P%,$(call script_bin_id,$(scr))),echo $(call script_bin_id,$(scr)) >> $(BLD_TMPDIR)/index.txt;))
+	$(foreach scr, $(scripts_bin), $(if $(filter Q%,$(call script_bin_id,$(scr))),echo $(call script_bin_id,$(scr)) >> $(BLD_TMPDIR)/index.txt;))
+	$(foreach scr, $(scripts_bin), $(if $(filter S%,$(call script_bin_id,$(scr))),echo $(call script_bin_id,$(scr)) >> $(BLD_TMPDIR)/index.txt;))
+	$(foreach scr, $(scripts_bin), $(if $(filter E%,$(call script_bin_id,$(scr))),echo $(call script_bin_id,$(scr)) >> $(BLD_TMPDIR)/index.txt;))
+	echo "EOF0">>$(BLD_TMPDIR)/index.txt
+	#magic/data_len/checksum
+	#printf 'EMET\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00' >> $(BLD_TMPDIR)/index_bin.txt
+	$(call id2hex) $(BLD_TMPDIR)/index.txt >> $(BLD_TMPDIR)/index_bin.txt
+	$(ECHO_ESC) $$(cat $(BLD_TMPDIR)/index_bin.txt) >> $(INDEX_FILE)
+	$(RM) $(BLD_TMPDIR)/index.txt
+	$(RM) $(BLD_TMPDIR)/index_bin.txt
+
+
+# Rule to package platform
+ifneq ($(no-platform),y)
+package_platform: $(REL_FWDIR) $(BLD_TMPDIR) $(bootloaders) $(image_file) $(padded_image_file)
+endif
+
+# Rule to package SDK
+ifneq ($(no-sdk),y)
+package_sdk: 
+	$(V)echo "start package_sdk"
+ifneq ("$(CONFIG_SDK_CAPE2)","")
+	$(V)$(RM) $(RELDIR)/cape2sdk
+	$(V)$(CP) $(CAFBASEROOT)/sdk/release/cape2sdk $(RELDIR)
+	$(V)$(CP) $(CAFBASEROOT)/platform/tahiti/cape2/bld/cape_a/chunk_type*.bin $(RELDIR)/cape2sdk/platform/tahiti/cape2/bld/cape_a
+ifneq ($(CONFIG_SIM_WINPC_RELEASE)$(CONFIG_SIM_WINPC_DEBUG),)
+	$(CP) $(CAFBASEROOT)/simulator/sim_server/buildwinpc/x64/Release/caf_sim_server.exe $(RELDIR)/cape2sdk/simulator/buildwinpc/cape2				
+endif
+endif	
+ifneq ("$(CONFIG_SDK_HIFI)","")
+	$(V)$(RM) $(RELDIR)/hifi3sdk
+	$(V)$(CP) $(CAFBASEROOT)/sdk/release/hifi3sdk $(RELDIR)
+	$(V)$(CP) $(CAFBASEROOT)/platform/tahiti/hifi3/buildconfig/chunk_type*.bin $(RELDIR)/hifi3sdk/platform/tahiti/hifi3/buildconfig
+	$(MKDIR)  $(RELDIR)/hifi3sdk/prebuilt
+	#chmod -R 777 $(RELDIR)/hifi3sdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.bin $(RELDIR)/hifi3sdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.exe $(RELDIR)/hifi3sdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.img $(RELDIR)/hifi3sdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.glm $(RELDIR)/hifi3sdk/prebuilt/golem.glm
+	#$(V)$(CP) $(RELDIR)/firmware/i2c_flash.* $(RELDIR)/hifi3sdk/prebuilt
+endif
+ifneq ("$(CONFIG_SDK_ASIP)","")
+	$(V)$(RM) $(RELDIR)/asipsdk
+	$(V)$(CP) $(CAFBASEROOT)/sdk/release/asipsdk $(RELDIR)
+	$(MKDIR)  $(RELDIR)/asipsdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.bin $(RELDIR)/asipsdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.exe $(RELDIR)/asipsdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.img $(RELDIR)/asipsdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.glm $(RELDIR)/asipsdk/prebuilt/golem.glm
+	#$(V)$(CP) $(RELDIR)/firmware/i2c_flash.* $(RELDIR)/asipsdk/prebuilt
+endif
+ifneq ("$(CONFIG_SDK_MCU)","")
+	$(V)$(RM) $(RELDIR)/mcusdk
+	$(V)$(CP) $(CAFBASEROOT)/sdk/release/.cproject $(RELDIR)
+	$(V)$(CP) $(CAFBASEROOT)/sdk/release/.project $(RELDIR)
+	$(V)$(CP) $(CAFBASEROOT)/sdk/release/mcusdk $(RELDIR)
+	$(V)$(CP) $(CAFBASEROOT)/platform/tahiti/m33/build/ns/chunk_type*.bin $(RELDIR)/mcusdk/platform/tahiti/m33/build/
+	$(MKDIR)  $(RELDIR)/mcusdk/prebuilt
+	#chmod -R 777 $(RELDIR)/mcusdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.bin $(RELDIR)/mcusdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.exe $(RELDIR)/mcusdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.img $(RELDIR)/mcusdk/prebuilt
+	$(V)$(CP) $(RELDIR)/firmware/*.glm $(RELDIR)/mcusdk/prebuilt/golem.glm
+	#$(V)$(CP) $(RELDIR)/firmware/i2c_flash.* $(RELDIR)/mcusdk/prebuilt
+ifeq ($(CONFIG_CHIP_NAME_KATANA),y)
+	cp $(CAFBASEROOT)/sdk/tahiti/makefiles/user_config $(RELDIR)/mcusdk/platform/src/include/user.conf
+endif
+endif		
+ifneq ($(no-scripts),y)
+	$(CP) $(REL_SCRDIR)/*  $(REL_SDKDIR)/config/scripts
+endif
+	$(V)echo "done package_sdk"
+endif
+
+# Rule to package simulator
+ifneq ($(no-simulator),y)
+
+sim_release_folders :=  $(REL_SIMDIR_FWDIR) $(REL_SIM_SCRDIR)
+
+sim_dependencies := $(sim_release_folders) \
+                    $(addprefix $(REL_SIM_SCRDIR)/,$(notdir $(scripts)))
+
+$(REL_SIMDIR) $(REL_SIMDIR_TOOLSDIR) $(sim_release_folders) :
+	$(mkdir_recipe)
+	
+$(REL_SIM_SCRDIR)/%:$(SRC_SCRDIR)/%
+	$(copy_recipe)
+
+sim_firmware_scripts: $(sim_dependencies) $(tclsh_sim_tool) $(sim_run_script) $(sim_run_bat_file) 
+	-$(V)$(CP) $(RELDIR)/firmware/*.exe $(REL_SIMDIR_FWDIR)
+	-$(V)$(CP) $(RELDIR)/firmware/*.img $(REL_SIMDIR_FWDIR)
+	-$(V)$(CP) $(RELDIR)/firmware/*.glm $(REL_SIMDIR_FWDIR)
+	-$(V)$(CP)  $(CAFBASEROOT)/simulator/sim_server/buildwinpc/x64/Release/caf_sim_server.exe $(REL_SIMDIR_TOOLSDIR)
+	-$(V)$(CP)  $(CAFBASEROOT)/simulator/sim_server/buildwinpc/x86/Release/caf_sim_server.exe $(REL_SIMDIR_TOOLSDIR)  
+	
+	
+package_simulator:  $(REL_SIMDIR) $(REL_SIMDIR_TOOLSDIR) $(native_sim_file) $(multi_core_sim_file) $(if $(CONFIG_PLATFORM_OBJECT),sim_firmware_scripts)
+
+endif
+
+$(golem_file): $(CAFBASEROOT)/golem/golem.kit $(master_scripts) \
+                        $(if $(IMAGE_CREATED),$(bootloaders) $(image_file)) \
+                        $(if $(CONFIG_SIM_WINPC_RELEASE),$(src_native_sim_file)) \
+                        $(if $(or $(CONFIG_TARGET_TAHITI),$(CONFIG_TARGET_KATANA)),package_tahiti_platform)
+	$(copy_recipe)
+	#chmod a+rw $@
+	echo "source $(call format_tcl_path,$@); \
+        file mkdir $(addprefix $(call format_tcl_path,$@/),firmware master simulator); \
+        $(if $(master_scripts),file copy $(foreach ms,$(master_scripts),$(call format_tcl_path,$(ms))) $(call format_tcl_path,$@/master);) \
+        $(if $(temp_tcl_files),file copy $(foreach ms,$(temp_tcl_files),$(call format_tcl_path,$(ms))) $(call format_tcl_path,$@/master);) \
+        $(if $(or $(CONFIG_TARGET_TAHITI),$(CONFIG_TARGET_KATANA)),file copy $(foreach ms,$(CREATE_FS_TOOL),$(call format_tcl_path,$(ms))) $(call format_tcl_path,$@/master);) \
+        $(if $(CONFIG_TARGET_CAPE),file copy $(call format_tcl_path,$(bootloaders)) $(call format_tcl_path,$@/firmware);) \
+        $(if $(CONFIG_TARGET_CAPE),file copy $(call format_tcl_path,$(image_file)) $(call format_tcl_path,$@/firmware/image.sfs);) \
+        $(if $(CONFIG_SIM_WINPC_RELEASE),file copy $(call format_tcl_path,$(src_native_sim_file)) $(call format_tcl_path,$@/simulator/cafsim$(FLAVOR).dll);) \
+       " | $(TCLKIT) || ($(RM) $@ && false)
+
+# Rule to package golem
+ifneq ($(no-golem),y)
+package_golem: $(REL_FWDIR) $(golem_file)
+endif
+
+ladspa_dir := $(RELDIR)/ladspa
+$(ladspa_dir): $(scripts_bin) $(blobs_bin)
+	mkdir $@
+	$(CP) $(CAFBASEROOT)/platform/plugin/ladspa/cafladspa/libcafladspa.so $@
+	echo $(foreach bin,$(scripts_bin),$(CP) $(bin) $(ladspa_dir)/$(call script_id,$(bin))" ;" ) | bash
+	echo $(foreach bin,$(blobs_bin),$(CP) $(bin) $(ladspa_dir)/$(call blob_id,$(bin))" ;" ) | bash
+
+caf_dir := $(RELDIR)/caf
+$(caf_dir): $(scripts_bin) $(blobs_bin)
+	rm -rf $@
+	mkdir $@
+	$(CP) $(CAFBASEROOT)/platform/plugin/cafinterface/libcaf.so $@
+	$(CP) $(CAFBASEROOT)/platform/plugin/cafinterface/libcaf_dump.so $@
+	$(CP) $(CAFBASEROOT)/platform/plugin/cafinterface/caf_interface.h $@
+ifeq ($(CONFIG_CAF_PLUGIN_LICENSE_FILE),y)
+	$(CP) $(CAFBASEROOT)/platform/plugin/cafinterface/aes-config/license $@
+endif
+	echo $(foreach bin,$(scripts_bin),$(CP) $(bin) $(caf_dir)/$(call script_id,$(bin))" ;" ) | bash
+	echo $(foreach bin,$(blobs_bin),$(CP) $(bin) $(caf_dir)/$(call blob_id,$(bin))" ;" ) | bash
+
+plugin_dir := $(if $(CONFIG_CAFPLUGIN), $(caf_dir))
+plugin_dir += $(if $(CONFIG_CAFLADSPA), $(ladspa_dir))
+package_plugin: $(plugin_dir)
+
+# Rule to package Android
+ifneq ($(no-android),y)
+patch_dir := $(RELDIR)/patches/*
+
+package_android: $(package_plugin)
+ifneq ($(wildcard $(CAFBASEROOT)/platform/android/bld/*),)
+	cp -ar $(CAFBASEROOT)/platform/android/bld/* $(RELDIR);
+endif
+	echo $(patch_dir)
+	for pdir in $(patch_dir); do 	if test -d $${pdir}/external/libaudiodspLADSPA; then echo $(foreach bin,$(scripts_bin),$(CP) $(bin) $${pdir}/external/libaudiodspLADSPA/$(call script_id,$(bin))" ;" ) | bash; fi; done
+
+endif
+
+# Rule to package Linux
+ifneq ($(no-linux),y)
+
+package_linux: $(package_plugin)
+	-cp -ar $(SRC_DOCDIR)/README.txt $(RELDIR)
+	echo $(ladspa_dir)
+ifneq ($(no-linux-demo_app),y)
+	cp -ar $(CAFBASEROOT)/platform/linux/demo_app $(RELDIR)
+	cp -ar $(CAFBASEROOT)/platform/src/include/autoconf.h $(RELDIR)/demo_app
+	-mv $(CAFBASEROOT)/platform/linux/demo_app/demoapp $(RELDIR)/firmware/
+endif
+	cd $(RELDIR) && md5sum firmware/* ladspa/* > documentation/fingerprint.md5
+	cd $(RELDIR) && file ladspa/libcafladspa.so > documentation/fingerprint.file
+ifneq ($(no-linux-demo_app),y)
+	cd $(RELDIR) && file firmware/demoapp >> documentation/fingerprint.file
+endif
+endif
+
+fcp_dependencies := $(if $(CONFIG_GOLEM),$(golem_file)) \
+                    $(if $(CONFIG_TUNING),$(CAFBASEROOT)/tuning/caf_tuning.exe) \
+                    $(FCP_TOOLSDIR) \
+                    $(FCP_SCRDIR) \
+                    $(addprefix $(FCP_SCRDIR)/,$(notdir $(scripts))) \
+                    $(FCP_DOCDIR) \
+                    $(fcp_docs) \
+                    $(TH_FCP_DOC_DIR) \
+					$(TH_FCP_DOCS) \
+                    $(FCP_OUTDIR) \
+                    $(if $(CONFIG_CAFPLUGIN), fcp_caf) \
+                    $(if $(CONFIG_FCP_INCLUDE_CAF_SERVICE),$(CAFBASEROOT)/platform/plugin/caf_service/caf_service) \
+					$(FCP_HOSTDIR)
+
+
+#SDK package depends on fcp to do package, so add package tools into fcp here
+#start part for package from top level
+package_tools_common      :=   \
+                          etc/Makefile.def \
+                          etc/get-msbuild-path.cmd \
+                          tools/tclkitsh-8.5.9-win32.upx.exe \
+                          tools/tclkit85-linux-x86 \
+                          tools/TCLTK_License.txt \
+                          platform/bin/chunk.exe \
+                          platform/bin/chunk-linux-x86_64 \
+                          platform/src/include/*.* \
+                          platform/tahiti/tools/create_chunks.tcl \
+                          platform/tahiti/tools/create_file_system.tcl
+ifeq ($(CONFIG_HOST_CODE_API_BG_UPGRADE), y)
+package_tools_common 	  += host/release/demo/bg_upgrade/Win32/Release_I2CF3/bg_upgrade.exe
+endif
+
+ifeq ($(CONFIG_CHIP_NAME_KATANA),y)
+package_tools_common += platform/tahiti/tools/parser.py
+package_tools_common += platform/bin/mconf.exe
+package_tools_common += platform/bin/mconf-linux
+endif
+
+package_fcp_for_sdk:
+	$(MKDIR) $(addprefix $(FCPDIR)/,$(dir $(package_tools_common)))
+	$(foreach file,$(package_tools_common),$(CP) $(wildcard $(CAFBASEROOT)/$(file)) $(FCPDIR)/$(dir $(file)) || echo "Skipping missing file(s) "$(file);)
+	$(MKDIR) $(FCPDIR)/config
+	cp $(CAFBASEROOT)/sdk/package/* $(FCPDIR)/config
+	$(SED) -i -e 's/tmpl/$(prefix)/' $(FCPDIR)/config/Makefile
+	cp $(CAFBASEROOT)/sdk/tahiti/makefiles/Makefile.top $(FCPDIR)/../Makefile
+ifeq ($(CONFIG_CHIP_NAME_KATANA),y)
+	cp $(CAFBASEROOT)/sdk/tahiti/makefiles/Kconfig_top $(FCPDIR)/../Kconfig
+	cp $(CAFBASEROOT)/sdk/tahiti/makefiles/user_config $(FCPDIR)/config/.config
+	cp $(CAFBASEROOT)/sdk/tahiti/makefiles/user_config $(FCPDIR)/platform/src/include/user.conf
+endif
+#end part for package from top level
+
+package_fcp: $(if $(CONFIG_SDK),package_fcp_for_sdk) $(if $(CONFIG_BUILD_FCP_EXE),$(CAFBASEROOT)/fcp/build_fcp.exe) $(if $(CONFIG_PACKAGE_FCP_SEPARETELY),$(fcp_dependencies))
+	$(if $(CONFIG_BUILD_FCP_EXE),(cp -ar $(CAFBASEROOT)/fcp/build_fcp.exe $(RELDIR)))
+	$(and $(CONFIG_TUNING),$(CONFIG_PACKAGE_FCP_SEPARETELY),$(V)$(CP) $(CAFBASEROOT)/tuning/caf_tuning.exe $(FCP_TOOLSDIR))
+	$(and $(CONFIG_GUI_PRODUCT_KEY_USE),$(CONFIG_PACKAGE_FCP_SEPARETELY),$(V)$(CP) $(CAFBASEROOT)/tuning/fcp_productkey $(FCP_TOOLSDIR))
+	$(and $(CONFIG_GOLEM),$(CONFIG_PACKAGE_FCP_SEPARETELY),$(V)$(CP) $(golem_file) $(FCP_TOOLSDIR))
+	$(and $(CONFIG_GOLEM),$(CONFIG_PACKAGE_FCP_SEPARETELY),$(V)$(RM) $(golem_file))
+	$(and $(CONFIG_PACKAGE_FCP_SEPARETELY), $(CONFIG_FCP_INCLUDE_CAF_SERVICE), $(V)$(CP) -ar $(CAFBASEROOT)/platform/plugin/caf_service/caf_service $(FCP_OUTDIR))
+	$(and $(CONFIG_PACKAGE_FCP_SEPARETELY),$(if $(CONFIG_CAFPLUGIN),0,1), $(V)$(CP) $(REL_FWDIR)/* $(FCP_OUTDIR) )
+	$(and $(CONFIG_PACKAGE_FCP_SEPARETELY),$(if $(CONFIG_CAFPLUGIN),0,1),$(CONFIG_TUNING), $(V)$(RM) $(FCP_OUTDIR)/caf_tuning.exe )
+	$(if $(CONFIG_PACKAGE_FCP_SEPARETELY), $(V)$(RM) -rf $(REL_SCRDIR) $(REL_DOCDIR) $(REL_FWDIR) )
+	$(and $(CONFIG_PACKAGE_FCP_SEPARETELY), $(CONFIG_CAFPLUGIN), $(V)$(RM) -rf $(caf_dir))
+	$(if $(CONFIG_FCP_HOST_CODE),(cp -r $(CAFBASEROOT)/host/release/* $(FCP_HOSTDIR)))
+	$(if $(CONFIG_SIMULATOR),( $(CAFBASEROOT)/config/copy_bin2dir.sh $(BLD_TMPDIR) $(CAFBASEROOT)/$(SIMDIR)/buildwinpc/$(FLAVOR)))
+	$(if $(CONFIG_SDK_CAPE2),( $(CAFBASEROOT)/config/copy_bin2dir.sh $(BLD_TMPDIR) $(RELDIR)/cape2sdk/simulator/buildwinpc/cape2))
+	$(and $(CONFIG_SDK_CAPE2), $(CONFIG_SIM_WINPC_RELEASE),  $(V)$(MKDIR) -p $(RELDIR)/cape2sdk/simulator/buildwinpc/input/waveforms)
+	$(and $(CONFIG_SDK_CAPE2), $(CONFIG_SIM_WINPC_RELEASE),  $(V)$(MKDIR) -p $(RELDIR)/cape2sdk/simulator/buildwinpc/output/streams)
+	$(and $(CONFIG_SDK_CAPE2), $(CONFIG_SIM_WINPC_RELEASE),  $(V)$(CP) $(CAFBASEROOT)/$(SIMDIR)/test_files/chirp.wav $(RELDIR)/cape2sdk/simulator/buildwinpc/input/waveforms)
+	$(and $(CONFIG_SDK_CAPE2), $(CONFIG_SIM_WINPC_RELEASE),  $(V)$(CP) $(CAFBASEROOT)/$(SIMDIR)/test_files/chirp3_stereo.wav $(RELDIR)/cape2sdk/simulator/buildwinpc/input/waveforms)
+	$(and $(CONFIG_SDK_CAPE2), $(CONFIG_SIM_CHESS_RELEASE),  $(V)$(MKDIR) -p $(RELDIR)/cape2sdk/simulator/buildchess/input/waveforms)
+	$(and $(CONFIG_SDK_CAPE2), $(CONFIG_SIM_CHESS_RELEASE),  $(V)$(MKDIR) -p $(RELDIR)/cape2sdk/simulator/buildchess/output/streams)
+	$(and $(CONFIG_SDK_CAPE2), $(CONFIG_SIM_CHESS_RELEASE),  $(V)$(CP) $(CAFBASEROOT)/$(SIMDIR)/test_files/chirp.wav $(RELDIR)/cape2sdk/simulator/buildchess/input/waveforms)
+	$(and $(CONFIG_SDK_CAPE2), $(CONFIG_SIM_CHESS_RELEASE),  $(V)$(CP) $(CAFBASEROOT)/$(SIMDIR)/test_files/chirp3_stereo.wav $(RELDIR)/cape2sdk/simulator/buildchess/input/waveforms)
+
+fcp_caf:$(caf_dir)
+	$(V)$(CP) -rf $(caf_dir)/* $(FCP_OUTDIR)/
+
+$(FCP_SCRDIR)/%:$(SRC_SCRDIR)/%
+	$(copy_recipe)
+
+$(TH_FCP_DOC_DIR):$(FCP_DOCDIR)
+	$(mkdir_recipe)
+
+$(FCP_SCRDIR) $(FCP_TOOLSDIR) $(FCP_DOCDIR) $(FCP_OUTDIR) $(FCP_HOSTDIR):$(FCPDIR)
+	$(mkdir_recipe)
+
+$(FCPDIR):$(RELDIR)
+	$(mkdir_recipe)
+
+package_tuning:$(CAFBASEROOT)/tuning/caf_tuning.exe $(REL_FWDIR)
+	cp -ar $(CAFBASEROOT)/tuning/caf_tuning.exe $(REL_FWDIR)
+
+clean:
+	$(V)$(RM) $(RELDIR) $(scripts_bin) $(blobs_bin) $(wavs_bin) $(cus0_bin)
+ifeq ($(or $(CONFIG_TARGET_TAHITI),$(CONFIG_TARGET_KATANA)),y)
+ifeq ($(CONFIG_DSP_ENABLE_BUILD),y)
+	rm -f $(HIFI3_DIR)/chunk*
+endif
+endif
+
+# Create empty custom targets
+$(foreach task,$(pkg_tasks_custom),$(eval $(task):))
+# Each packaging category also depends on the custom part of it
+$(foreach task,$(pkg_tasks),$(eval $(task): $(addsuffix _custom,$(task))))
+
+
+

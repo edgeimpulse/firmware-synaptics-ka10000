@@ -1,0 +1,85 @@
+
+//Maximum number of buffers which are simultaneously active at any point of time during infer
+#define PRE_ALLOC_MAX_SIMUL_ACTIVE_BUFFS 3
+
+//Total heap size required to fit the model
+#define PRE_ALLOC_TOTAL_HEAP_MEMORY_SIZE 138248
+
+//Total number of allocations during infer
+#define PRE_ALLOC_MAX_ALLOCS_PER_INFER 69
+
+#ifndef H_WORKQ_COMMON_
+// preallocArray[x][0] : allocation size
+// preallocArray[x][1] : offset to be allocated from the base address
+unsigned int preallocArray[PRE_ALLOC_MAX_ALLOCS_PER_INFER][2] = {
+{9216, 0},
+{18432, 36864},
+{18432, 18432},
+{18432, 0},
+{18432, 110592},
+{110592, 0},
+{27648, 110592},
+{4608, 55296},
+{27648, 27648},
+{27648, 0},
+{4608, 32256},
+{4608, 27648},
+{27648, 0},
+{6912, 27648},
+{1152, 14976},
+{6912, 6912},
+{6912, 0},
+{1152, 6912},
+{1152, 13824},
+{6912, 6912},
+{6912, 0},
+{1152, 8064},
+{1152, 6912},
+{6912, 0},
+{1728, 6912},
+{288, 3744},
+{1728, 1728},
+{1728, 0},
+{288, 1728},
+{288, 3456},
+{1728, 1728},
+{1728, 0},
+{288, 1728},
+{288, 3744},
+{1728, 1728},
+{1728, 0},
+{288, 1728},
+{288, 3456},
+{1728, 1728},
+{1728, 0},
+{288, 1728},
+{288, 3744},
+{1728, 1728},
+{1728, 0},
+{288, 1728},
+{288, 3456},
+{1728, 1728},
+{1728, 0},
+{288, 2016},
+{288, 1728},
+{1728, 0},
+{432, 1728},
+{72, 936},
+{432, 432},
+{432, 0},
+{72, 432},
+{72, 864},
+{432, 432},
+{432, 0},
+{72, 432},
+{72, 0},
+{432, 432},
+{432, 0},
+{144, 11520},
+{11520, 0},
+{72, 11520},
+{72, 0},
+{8, 72},
+{8, 0},
+};
+#endif

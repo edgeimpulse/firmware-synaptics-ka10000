@@ -1,0 +1,447 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug_I2CF30x42|Win32">
+      <Configuration>Debug_I2CF30x42</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug_I2CF3|Win32">
+      <Configuration>Debug_I2CF3</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug_I2C|Win32">
+      <Configuration>Debug_I2C</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug_USB|Win32">
+      <Configuration>Debug_USB</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_I2CF30x42|Win32">
+      <Configuration>Release_I2CF30x42</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_I2CF3|Win32">
+      <Configuration>Release_I2CF3</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_I2C|Win32">
+      <Configuration>Release_I2C</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_USB|Win32">
+      <Configuration>Release_USB</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{EC16EB23-E90A-4077-BE3C-8B98B42D737D}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>bg_upgrade</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_USB|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2C|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2CF3|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2CF30x42|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_USB|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2C|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2CF3|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2CF30x42|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug_USB|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2C|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2CF3|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2CF30x42|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release_USB|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2C|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2CF3|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2CF30x42|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_USB|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2C|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets />
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <GenerateManifest>true</GenerateManifest>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2CF3|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets />
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <GenerateManifest>true</GenerateManifest>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2CF30x42|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets />
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <GenerateManifest>true</GenerateManifest>
+    <EmbedManifest>false</EmbedManifest>
+    <TargetName>$(ProjectName)_i2c_f3_0x42</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_USB|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <GenerateManifest>false</GenerateManifest>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2C|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets />
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <GenerateManifest>false</GenerateManifest>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2CF3|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets />
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <GenerateManifest>false</GenerateManifest>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2CF30x42|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets />
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <GenerateManifest>false</GenerateManifest>
+    <EmbedManifest>false</EmbedManifest>
+    <TargetName>$(ProjectName)_i2c_f3_0x42</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_USB|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;USE_WIN_HID_API;ENABLE_USB_CONTROL;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..;..\..\interface\uvc-ait;..\..\..\caf\include;..\..\..\platform\src\include;..\..\fw_upgrade;..\..\api\include\;..\..\api\interface_api\i2c_interface\include\;..\..\api\interface_api\usb_interface\include\;..\..\api\mid_level_api\sendcmd\include\;..\..\api_src\include\;..\..\api\top_level_api\bg_upgrade_api\include;..\..\api_src\top_level_api\bg_upgrade_api;..\..\api\top_level_api\dsp_ctrl_status_api\include;..\..\host_depends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\..\api\interface_api\i2c_interface\lib\Win32\Debug;..\..\api\interface_api\usb_interface\lib\Win32;..\..\api\mid_level_api\sendcmd\lib\Win32;..\..\api\top_level_api\bg_upgrade_api\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>setupapi.lib;hid.lib;libwin_hid.lib;libsendcmd_usb.lib;libbg_upgrade.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <GenerateMapFile>true</GenerateMapFile>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2C|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;USE_WIN_HID_API;ENABLE_I2C_CONTROL;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..;..\..\interface\uvc-ait;..\..\..\caf\include;..\..\..\platform\src\include;..\..\fw_upgrade;..\..\api\include\;..\..\api\interface_api\i2c_interface\include\;..\..\api\interfacece_api\usb_interface\include\;..\..\api\mid_level_api\sendcmd\include\;..\..\api_src\include\;..\..\api\top_level_api\bg_upgrade_api\include;..\..\api_src\top_level_api\bg_upgrade_api;..\..\api\top_level_api\dsp_ctrl_status_api\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\..\api\interface_api\i2c_interface\lib\Win32\Debug;..\..\api\interface_api\usb_interface\lib\Win32;..\..\api\mid_level_api\sendcmd\lib\Win32;..\..\api\top_level_api\bg_upgrade_api\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>setupapi.lib;hid.lib;libi2c_siena.lib;libsendcmd_i2c.lib;libbg_upgrade.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2CF3|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;USE_WIN_HID_API;ENABLE_USB_CONTROL;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;CONFIG_TARGET_KATANA;CONFIG_TARGET_TAHITI;INTERFACE_I2C_F3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..;..\..\interface\uvc-ait;..\..\..\caf\include;..\..\..\platform\src\include;..\..\fw_upgrade;..\..\api\include\;..\..\api\interface_api\i2c_interface\include\;..\..\api\interface_api\usb_interface\include\;..\..\api\mid_level_api\sendcmd\include\;..\..\api_src\include\;..\..\api\top_level_api\bg_upgrade_api\include;..\..\api_src\top_level_api\bg_upgrade_api;..\..\api\top_level_api\dsp_ctrl_status_api\include;..\..\..\platform\src\include\drv;..\..\..\platform\src\api_src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\..\api\interface_api\i2c_interface\lib\Win32\Release;..\..\api\interface_api\i2c_interface\lib\Win32\Debug;..\..\api\interface_api\usb_interface\lib\Win32;..\..\api\mid_level_api\sendcmd\lib\Win32;..\..\api\top_level_api\bg_upgrade_api\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>setupapi.lib;hid.lib;libwin_hid.lib;libsendcmd_i2c-f3.lib;libi2c_f3.lib;libbg_upgrade.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2CF30x42|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;USE_WIN_HID_API;ENABLE_USB_CONTROL;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;CONFIG_TARGET_KATANA;CONFIG_TARGET_TAHITI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..;..\..\interface\uvc-ait;..\..\..\caf\include;..\..\..\platform\src\include;..\..\fw_upgrade;..\..\api\include\;..\..\api\interface_api\i2c_interface\include\;..\..\api\interface_api\usb_interface\include\;..\..\api\mid_level_api\sendcmd\include\;..\..\api_src\include\;..\..\api\top_level_api\bg_upgrade_api\include;..\..\api_src\top_level_api\bg_upgrade_api;..\..\api\top_level_api\dsp_ctrl_status_api\include;..\..\..\platform\src\include\drv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\..\api\interface_api\i2c_interface\lib\Win32\Debug;..\..\api\interface_api\usb_interface\lib\Win32;..\..\api\mid_level_api\sendcmd\lib\Win32;..\..\api\top_level_api\bg_upgrade_api\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>setupapi.lib;hid.lib;libwin_hid.lib;libsendcmd_i2c-f3-0x42.lib;libbg_upgrade.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_USB|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;USE_WIN_HID_API;ENABLE_USB_CONTROL;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..;..\..\interface\uvc-ait;..\..\..\caf\include;..\..\..\platform\src\include;..\..\fw_upgrade;..\..\api\include\;..\..\api\interface_api\i2c_interface\include\;..\..\api\interface_api\usb_interface\include\;..\..\api\mid_level_api\sendcmd\include\;..\..\api_src\include\;..\..\api\top_level_api\bg_upgrade_api\include;..\..\api_src\top_level_api\bg_upgrade_api;..\..\api\top_level_api\dsp_ctrl_status_api\include;..\..\host_depends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>..\..\api\interface_api\i2c_interface\lib\Win32\Release;..\..\api\interface_api\usb_interface\lib\Win32;..\..\api\mid_level_api\sendcmd\lib\Win32;..\..\api\top_level_api\bg_upgrade_api\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>setupapi.lib;hid.lib;libwin_hid.lib;libsendcmd_usb.lib;libbg_upgrade.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2C|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;USE_WIN_HID_API;ENABLE_I2C_CONTROL;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..;..\..\interface\uvc-ait;..\..\..\caf\include;..\..\..\platform\src\include;..\..\fw_upgrade;..\..\api\include\;..\..\api\interface_api\i2c_interface\include\;..\..\api\interface_api\usb_interface\include\;..\..\api\mid_level_api\sendcmd\include\;..\..\api_src\include\;..\..\api_src\top_level_api\bg_upgrade_api;..\..\api\top_level_api\bg_upgrade_api\include;..\..\api\top_level_api\dsp_ctrl_status_api\include;..\..\host_depends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>..\..\api\interface_api\i2c_interface\lib\Win32\Release;..\..\api\interface_api\usb_interface\lib\Win32;..\..\api\mid_level_api\sendcmd\lib\Win32;..\..\api\top_level_api\bg_upgrade_api\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>setupapi.lib;hid.lib;libi2c_siena.lib;libsendcmd_i2c.lib;libbg_upgrade.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2CF3|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;USE_WIN_HID_API;ENABLE_USB_CONTROL;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;INTERFACE_I2C_F3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..;..\..\..\caf\include;..\..\..\platform\src\include;..\..\fw_upgrade;..\..\api\include\;..\..\api\interface_api\i2c_interface\include\;..\..\api\interface_api\usb_interface\include\;..\..\api\mid_level_api\sendcmd\include\;..\..\api_src\include\;..\..\api_src\top_level_api\bg_upgrade_api;..\..\api\top_level_api\bg_upgrade_api\include;..\..\api\top_level_api\dsp_ctrl_status_api\include;..\..\host_depends;..\..\..\platform\src\api_src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>..\..\api\interface_api\i2c_interface\lib\Win32\Release;..\..\api\interface_api\usb_interface\lib\Win32;..\..\api\mid_level_api\sendcmd\lib\Win32;..\..\api\top_level_api\bg_upgrade_api\lib\Win32</AdditionalLibraryDirectories>
+      <AdditionalDependencies>setupapi.lib;hid.lib;libwin_hid.lib;libsendcmd_i2c-f3.lib;libi2c_f3.lib;libbg_upgrade.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_I2CF30x42|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;USE_WIN_HID_API;ENABLE_USB_CONTROL;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..;..\..\..\caf\include;..\..\..\platform\src\include;..\..\fw_upgrade;..\..\api\include\;..\..\api\interface_api\i2c_interface\include\;..\..\api\interface_api\usb_interface\include\;..\..\api\mid_level_api\sendcmd\include\;..\..\api_src\include\;..\..\api_src\top_level_api\bg_upgrade_api;..\..\api\top_level_api\bg_upgrade_api\include;..\..\api\top_level_api\dsp_ctrl_status_api\include;..\..\host_depends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>..\..\api\interface_api\usb_interface\lib\Win32;..\..\api\mid_level_api\sendcmd\lib\Win32;..\..\api\top_level_api\bg_upgrade_api\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>setupapi.lib;hid.lib;libwin_hid.lib;libsendcmd_i2c-f3-0x42.lib;libbg_upgrade.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="CxProgress.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\api\top_level_api\bg_upgrade_api\include\AudioSmart_libbg_upgrade.h" />
+    <ClInclude Include="CxProgress.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

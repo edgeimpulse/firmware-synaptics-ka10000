@@ -1,0 +1,126 @@
+################################################################################
+#
+# NDA AND NEED-TO-KNOW REQUIRED
+#
+# Copyright (C) 2021 Synaptics Incorporated. All rights reserved.
+#
+# This file contains information that is proprietary to Synaptics
+# Incorporated ("Synaptics"). The holder of this file shall treat all
+# information contained herein as confidential, shall use the
+# information only for its intended purpose, and shall not duplicate,
+# disclose, or disseminate any of this information in any manner
+# unless Synaptics has otherwise provided express, written
+# permission.
+#
+# Use of the materials may require a license of intellectual property
+# from a third party or from Synaptics. This file conveys no express
+# or implied licenses to any intellectual property rights belonging
+# to Synaptics.
+#
+# INFORMATION CONTAINED IN THIS DOCUMENT IS PROVIDED "AS-IS," AND
+# SYNAPTICS EXPRESSLY DISCLAIMS ALL EXPRESS AND IMPLIED WARRANTIES,
+# INCLUDING ANY IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE, AND ANY WARRANTIES OF NON-INFRINGEMENT OF ANY
+# INTELLECTUAL PROPERTY RIGHTS. IN NO EVENT SHALL SYNAPTICS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, PUNITIVE, OR
+# CONSEQUENTIAL DAMAGES ARISING OUT OF OR IN CONNECTION WITH THE USE
+# OF THE INFORMATION CONTAINED IN THIS DOCUMENT, HOWEVER CAUSED AND
+# BASED ON ANY THEORY OF LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# NEGLIGENCE OR OTHER TORTIOUS ACTION, AND EVEN IF SYNAPTICS WAS
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. IF A TRIBUNAL OF
+# COMPETENT JURISDICTION DOES NOT PERMIT THE DISCLAIMER OF DIRECT
+# DAMAGES OR ANY OTHER DAMAGES, SYNAPTICS' TOTAL CUMULATIVE LIABILITY
+# TO ANY PARTY SHALL NOT EXCEED ONE HUNDRED U.S. DOLLARS.
+#
+################################################################################
+
+mainmenu "User Kconfig Menu"
+
+menu "Demo Control"
+
+config  MCU_SDK_TENSAIFLOW_DEMO
+	bool "Enable Tensaiflow Demo"
+	default n
+	help
+	  Enable Tensaiflow Demo Task
+config  MCU_SDK_CAMERA_ENABLE
+	bool "Enable MCU Tensaiflow With Camera"
+	default n
+	depends on MCU_SDK_TENSAIFLOW_DEMO
+	help
+	  Enable Camera Interface
+choice
+	prompt "Tensai Demo Select"
+	depends on MCU_SDK_TENSAIFLOW_DEMO
+	default MCU_SDK_KPD_DEMO
+	help
+		Choice KPD Pre/Post Process Demo
+config MCU_SDK_KPD_DEMO
+	bool "Select KPD Demo"
+    select MCU_SDK_CAMERA_ENABLE
+	help
+	  Enable KPD(Katana People Count) demo
+config MCU_SDK_KMR_DEMO
+	bool "Select KMR Demo"
+    select MCU_SDK_CAMERA_ENABLE
+	help
+	  Enable KMR(Katana Meter Reader) demo
+endchoice
+
+config TENSAI_COMPILE_MODEL
+	string
+	default tensaiflow/models/model_kpd.tflite if MCU_SDK_KPD_DEMO
+	default tensaiflow/models/model_kmr.tflite if MCU_SDK_KMR_DEMO
+	default tensaiflow/models/model.tflite
+	help
+	  Select compile model which under tensaiflow/models/
+
+config  SDK_BASIC_DEMO
+	bool "Enable MCU Basic Demo"
+	default n
+	help
+	  Enable MCU Basic User Demo Task
+
+config SDK_CAMERA_DEMO
+	bool "Enable MCU Camera Demo"
+	default n
+	help
+	  Enable Camera Demo
+
+config MCU_SDK_ADC_DEMO
+	bool "Enable MCU ADC Demo"
+	default n
+	help
+	  Enable ADC Demo
+
+config MCU_SDK_SFS_DEMO
+	bool "Enable SFS Demo"
+	default n
+	depends on !SDK_CAMERA_DEMO
+	help
+	  Enable SFS Demo
+
+config MCU_SDK_PM_DEMO
+	bool "Enable PM Demo"
+	default n
+	help
+	  Enable PM Demo
+
+config MCU_SDK_BLUETOOTH_DEMO
+	bool "Enable Bluetooth Demo"
+	default n
+	help
+	  Enable bluetooth demo
+
+config FIRMWARE
+	bool "Enable Edge Impulse Firmware example"
+	default n
+	help
+	  Enable firmware example
+
+endmenu
+
+
+config	USER_KCONFIG_ACTIVE
+	bool
+	default y

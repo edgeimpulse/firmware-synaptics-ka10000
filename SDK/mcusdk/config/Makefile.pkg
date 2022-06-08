@@ -1,0 +1,384 @@
+################################################################################
+#
+#  CONEXANT SYSTEMS, INC. CONFIDENTIAL AND PROPRIETARY
+#
+#  The information contained in this source code file
+#  is strictly confidential and proprietary to Conexant Systems, Inc.
+#  ("Conexant")
+#
+#  No part of this file may be possessed, reproduced or distributed, in
+#  any form or by any means for any purpose, without the express written
+#  permission of Conexant Systems Inc.
+#
+#  Except as otherwise specifically provided through an express agreement
+#  with Conexant that governs the confidentiality, possession, use
+#  and distribution of the information contained in this file, CONEXANT
+#  PROVIDES THIS INFORMATION "AS IS" AND MAKES NO REPRESENTATIONS OR
+#  WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY IMPLIED
+#  WARRANTY OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE,
+#  TITLE OR NON-INFRINGEMENT, AND SPECIFICALLY DISCLAIMS SUCH WARRANTIES
+#  AND REPRESENTATIONS.  IN NO EVENT WILL CONEXANT BE LIABLE FOR ANY DAMAGES
+#  ARISING FROM THE USE OF THE INFORMATION CONTAINED IN THIS FILE.
+#
+#  Copyright (C) 2009-2019 Conexant Systems Inc.
+#  All rights reserved.
+#
+################################################################################
+V:=@
+.ONESHELL:
+.SHELLFLAGS=-ec
+
+# If configuration is undefined (e.g. running from this folder),
+# calculate it based on the current location
+ifeq ($(CONFIG),)
+  CONFIG	=	$(shell echo $(CURDIR) | sed 's/.*config\/*\(.*\)/\1/')
+endif
+
+include $(CAFBASEROOT)/etc/Makefile.def
+include $(CAFBASEROOT)/platform/src/include/auto.conf
+
+# overwrite configuration Makefile options with Kconfig options
+ifeq ($(CONFIG_PACKAGING),y)
+prefix              := $(shell echo $(CONFIG_SCRIPT_PREFIX))
+ifneq ($(CONFIG_TARGET_APO),y)
+no-image            := $(CONFIG_NO_IMAGE)
+no-platform         := $(CONFIG_NO_PLATFORM)
+no-sdk              := $(CONFIG_NO_SDK)
+endif
+no-scripts          := $(CONFIG_NO_SCRIPTS)
+no-golem            := $(CONFIG_NO_GOLEM)
+no-documentation    := $(CONFIG_NO_DOCUMENTATION)
+no-linux-demo_app   := $(CONFIG_NO_LINUX_DEMO_APP)
+$(info CONFIG_PACKAGING='$(CONFIG_PACKAGING)')
+$(info prefix='$(prefix)')
+in-sdk              := n
+endif
+
+# build tools
+GOLEM   := $(CAFBASEROOT)/golem/golem.kit
+MKSFS	  := $(CAFBASEROOT)/platform/bin/mksfs.exe
+
+BLDDIR	:= $(CAFBASEROOT)/bld$(if $(CONFIG),/$(CONFIG))
+RELDIR	:= $(BLDDIR)/release
+FCPDIR  := $(RELDIR)/fcp
+
+TMPDIR  := temp
+
+SCRDIR  := scripts
+INT_SCRDIR  := int_scripts
+DOCDIR  := documentation
+FWDIR   := firmware
+SDKDIR  := sdk
+SIMDIR  := simulator
+GLMDIR  := golem
+
+SRC_SCRDIR	:= $(SCRDIR)
+SRC_DOCDIR	:= $(DOCDIR)
+
+BLD_TMPDIR  := $(BLDDIR)/$(TMPDIR)
+
+REL_SCRDIR  := $(RELDIR)/$(SCRDIR)
+REL_DOCDIR  := $(RELDIR)/$(DOCDIR)
+REL_FWDIR   := $(RELDIR)/$(FWDIR)
+REL_SDKDIR  := $(RELDIR)/$(SDKDIR)
+REL_SIMDIR  := $(RELDIR)/$(SIMDIR)
+REL_GLMDIR  := $(RELDIR)/$(GLMDIR)
+
+FCP_SCRDIR  := $(FCPDIR)/$(SCRDIR)
+FCP_DOCDIR  := $(FCPDIR)/$(DOCDIR)
+FCP_OUTDIR  := $(FCPDIR)/orig_build
+FCP_TOOLSDIR:= $(FCPDIR)/tools
+FCP_HOSTDIR := $(FCPDIR)/host
+
+SRC_SIMDIR  := $(CAFBASEROOT)/$(SIMDIR)
+REL_SIM_SCRDIR  := $(RELDIR)/$(SIMDIR)/$(SCRDIR)
+REL_SIMDIR_TOOLSDIR  := $(RELDIR)/$(SIMDIR)/tools
+REL_SIMDIR_FWDIR  := $(RELDIR)/$(SIMDIR)/firmware
+
+
+# _ID(a,b,c,d)	((((a)-0x20)<<8)|(((b)-0x20)<<14)|(((c)-0x20)<<20)|(((d)-0x20)<<26))
+define id2hex
+  awk 'BEGIN{FS="";_ord_init() }
+    function _ord_init(    low, high, i, t)
+    {
+      low = sprintf("%c", 7) # BEL is ascii 7
+      if (low == "\a") {    # regular ascii
+        low = 0
+        high = 127
+      } else if (sprintf("%c", 128 + 7) == "\a") {
+        # ascii, mark parity
+        low = 128
+        high = 255
+      } else {        # ebcdic(!)
+        low = 0
+        high = 255
+      }
+    
+      for (i = low; i <= high; i++) {
+        t = sprintf("%c", i)
+        _ord_[t] = i
+      }
+    }
+    function ord(str,    c)
+    {
+      # only first character is of interest
+      c = substr(str, 1, 1)
+      return _ord_[c]
+    }
+    
+    function chr(c)
+    {
+      # force c to be numeric by adding 0
+      return sprintf("%c", c + 0)
+    }
+    
+    {
+      id=((ord($$1)-0x20)*2^8)+((ord($$2)-0x20)*2^14)+((ord($$3)-0x20)*2^20)+((ord($$4)-0x20)*2^26);
+      i0=(id/(2^24))%(2^8);
+      i1=(id/(2^16))%(2^8);
+      i2=(id/(2^8))%(2^8);
+      i3=(id%(2^8));
+      printf("\\x%02x\\x%02x\\x%02x\\x%02x",i3,i2,i1,i0);
+    }
+  END{}'
+endef
+
+
+# To support saving files in a specified directory. 
+# using "make O=dir/to/store/output/files"
+# The O= assigment takes precedence over the REL_FWDIR variable.
+ifeq ("$(origin O)", "command line")
+	REL_FWDIR   := ../../../$(O)
+endif
+
+
+image_file_base := $(if $(CONFIG),$(CONFIG)$(SUBCONFIG),image)
+
+ifneq ($(DISPLAY_VERSION),)
+    image_file_base := $(image_file_base)-$(DISPLAY_VERSION)
+endif
+# Replace by dash:
+#	1) / from $(CONFIG)
+#	2) possible spaces from $(DISPLAY_VERSION)
+#	3) possible : from SVN_REVISION (e.g. 11525:11526M)
+image_file_base	:= $(shell echo "$(image_file_base)" | $(SED) -r 's/[\/ :]/-/g')
+
+image_file 			:= $(if $(CONFIG_TARGET_CAPE),$(REL_FWDIR)/$(addsuffix .sfs,$(image_file_base)))
+padded_image_file 	:= $(if $(CONFIG_TARGET_CAPE),$(REL_FWDIR)/$(addsuffix -padded.sfs,$(image_file_base)))
+evk_image_file 		:= $(if $(CONFIG_TARGET_CAPE),$(REL_FWDIR)/$(addsuffix -evk.sfs,$(image_file_base)))
+golem_file 			:= $(if $(CONFIG_GOLEM),$(REL_FWDIR)/$(addsuffix .glm,$(image_file_base)))
+native_sim_file := $(if $(CONFIG_SIM_WINPC_RELEASE)$(CONFIG_SIM_WINPC_DEBUG),$(REL_SIMDIR_TOOLSDIR)/$(addsuffix _cafsim$(FLAVOR)_single.dll,$(image_file_base)))
+multi_core_sim_file  := $(if $(CONFIG_SIM_MULTI_CORE),$(REL_SIMDIR_TOOLSDIR)/$(addsuffix _cafsim$(FLAVOR)_multiple.dll,$(image_file_base)))
+tclsh_sim_tool      := $(if $(CONFIG_SIM_WINPC_RELEASE)$(CONFIG_SIM_WINPC_DEBUG),$(REL_SIMDIR_TOOLSDIR)/$(notdir $(TCLKIT)))
+src_sim_run_script  := $(if $(CONFIG_SIM_WINPC_RELEASE)$(CONFIG_SIM_WINPC_DEBUG),$(SRC_SIMDIR)/include/tcl/RunSim.tcl)
+sim_run_script      := $(if $(CONFIG_SIM_WINPC_RELEASE)$(CONFIG_SIM_WINPC_DEBUG),$(REL_SIMDIR_TOOLSDIR)/$(notdir $(src_sim_run_script)))
+src_sim_run_bat_file:= $(if $(CONFIG_SIM_WINPC_RELEASE)$(CONFIG_SIM_WINPC_RELEASE),$(SRC_SIMDIR)/include/tcl/run_sim.bat)
+sim_run_bat_file    := $(if $(CONFIG_SIM_WINPC_RELEASE)$(CONFIG_SIM_WINPC_RELEASE),$(REL_SIMDIR_TOOLSDIR)/$(notdir $(src_sim_run_bat_file)))
+ifeq ($(CONFIG_SIMULATOR),y)
+  ifeq ("$(CONFIG_SIM_WINPC_RELEASE)$(CONFIG_SIM_WINPC_DEBUG)$(CONFIG_SIM_CHESS_RELEASE)$(CONFIG_SIM_CHESS_DEBUG)","")
+    $(error Simulator build is required, but none of simulators is defined)
+  endif
+endif
+# First use Debug and overwrite with Release if it is also defined
+ifeq ($(CONFIG_SIM_WINPC_DEBUG),y)
+  src_native_sim_file		:= $(CAFBASEROOT)/$(SIMDIR)/buildwinpc/$(FLAVOR)/Debug/cafsim$(FLAVOR).dll
+  # cape2 winpc simulator is 64-bit
+  ifeq ($(FLAVOR),cape2)
+    src_native_sim_file		:= $(CAFBASEROOT)/$(SIMDIR)/buildwinpc/$(FLAVOR)/x64/Debug/cafsim$(FLAVOR).dll
+  endif
+endif
+ifeq ($(CONFIG_SIM_WINPC_RELEASE),y)
+  src_native_sim_file		:= $(CAFBASEROOT)/$(SIMDIR)/buildwinpc/$(FLAVOR)/Release/cafsim$(FLAVOR).dll
+  # cape2 winpc simulator is 64-bit
+  ifeq ($(FLAVOR),cape2)
+    src_native_sim_file		:= $(CAFBASEROOT)/$(SIMDIR)/buildwinpc/$(FLAVOR)/x64/Release/cafsim$(FLAVOR).dll
+  endif
+endif
+
+ifeq ($(CONFIG_SIM_MULTI_CORE),y)
+  src_multi_core_sim_file := $(CAFBASEROOT)/$(SIMDIR)/buildwinpc/$(FLAVOR)/x64/ReleaseMultiCore/cafsim$(FLAVOR).dll
+endif
+
+INDEX_FILE := $(BLD_TMPDIR)/$(prefix)_INDX_scripts_files.bin
+
+bootloaders :=  $(if $(CONFIG_BOOT_I2CS_FLASH),$(REL_FWDIR)/iflash.bin) \
+                $(if $(CONFIG_BOOT_UART_FLASH),$(REL_FWDIR)/uflash.bin) \
+                $(if $(CONFIG_LIVE_I2C_FLASH),$(REL_FWDIR)/iflash.bin) \
+                $(if $(CONFIG_LIVE_UART_FLASH),$(REL_FWDIR)/uflash.bin) 
+
+ifeq ('$(DEBUG)','y')
+  $(info bootloaders='$(bootloaders)')
+endif
+
+# macros
+scripts				:=	$(wildcard $(SCRDIR)/*.*tcl) $(wildcard $(SCRDIR)/*.sh) $(wildcard $(SCRDIR)/*.blob) $(wildcard $(SCRDIR)/*.wav) $(wildcard $(SCRDIR)/*.cus0)
+ifeq ('$(DEBUG)','y')
+  $(info scripts='$(scripts)')
+endif
+
+ifeq ($(CONFIG_FCP_PACK_DEFAULT_MODE_ONLY),y)
+scripts_to_flash	:=	$(wildcard $(SCRDIR)/$(prefix)_[C|P|Q][A-Z0-9][A-Z0-9][A-Z0-9]*.tcl)
+else
+scripts_to_flash	:=	$(wildcard $(SCRDIR)/$(prefix)_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]*.tcl)
+endif
+ifeq ('$(DEBUG)','y')
+  $(info scripts_to_flash='$(scripts_to_flash)')
+endif
+
+ifneq ($(CONFIG_M33_SFS_TO_SHARED_SYSMEM_MEM),y)
+blobs_to_flash	:=	$(wildcard $(SCRDIR)/$(prefix)_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]*.blob)
+ifeq ('$(DEBUG)','y')
+  $(info blobs_to_flash='$(blobs_to_flash)')
+endif
+endif
+
+int_scripts_to_flash := $(wildcard $(INT_SCRDIR)/$(prefix)_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]*.tcl)
+ifeq ('$(DEBUG)','y')
+  $(info int_scripts_to_flash='$(int_scripts_to_flash)')
+endif
+
+int_blobs_to_flash := $(wildcard $(INT_SCRDIR)/$(prefix)_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]*.blob)
+ifeq ('$(DEBUG)','y')
+  $(info int_blobs_to_flash='$(int_blobs_to_flash)')
+endif
+
+wavs_to_flash	:=	$(wildcard $(SCRDIR)/$(prefix)_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]*.wav)
+cus0_to_flash	:=	$(wildcard $(SCRDIR)/$(prefix)_[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]*.cus0)
+ifeq ('$(DEBUG)','y')
+  $(info wavs_to_flash='$(wavs_to_flash)')
+  $(info cus0_to_flash='$(cus0_to_flash)')
+endif
+
+documents :=	$(addprefix $(REL_DOCDIR)/,$(notdir $(subst .docx,.pdf, $(filter-out $(DOCDIR)/~%.docx,$(wildcard $(DOCDIR)/*.docx))) \
+                                                                      $(wildcard $(DOCDIR)/*.pdf) \
+                                                                      $(wildcard $(DOCDIR)/*.xlsx) \
+                                                                      $(wildcard $(DOCDIR)/*.xls) \
+                                                                      $(wildcard $(DOCDIR)/*.htm)))
+# Since we combine three variables, there will be at least one space; get rif of extra spaces
+documents := $(strip $(documents))
+ifeq ('$(DEBUG)','y')
+  $(info documents='$(documents)')
+endif
+
+# Select documents to package with the SDK
+ifneq ($(no-sdk),y)
+#external_documents += $(CAFBASEROOT)/sdk/doc/CAPE_FirmwareSdkGuide.docx
+#external_documents += $(CAFBASEROOT)/sdk/doc/CAPE_InstallationGuideTargetTools.docx
+#external_documents += $(CAFBASEROOT)/sdk/doc/CAPE_ToolInstallationGuide.docx
+#external_documents += $(CAFBASEROOT)/sdk/doc/CAPE_ModuleLibraryTutorial.docx
+#external_documents += $(CAFBASEROOT)/libraries/cnxt/public_doc/CAPE_FAQ.docx
+#external_documents += $(CAFBASEROOT)/libraries/cnxt/public_doc/CAPE_ModuleProgramming.docx
+#external_documents += $(CAFBASEROOT)/libraries/cnxt/public_doc/CAPE_PublicSWLibrary.docx
+#external_documents += $(CAFBASEROOT)/libraries/cnxt/cnxt_doc/CAPE_GeneralNotesOnTheModules.docx
+#external_documents += $(CAFBASEROOT)/libraries/cnxt/cnxt_doc/CAPE_ModulesGuide.docx
+#external_documents += $(CAFBASEROOT)/libraries/cnxt/cnxt_doc/CAPE_Testing.docx
+#external_documents += $(CAFBASEROOT)/caf/doc/CAF_AppGuide.docx
+#external_documents += $(CAFBASEROOT)/caf/doc/CAF_UserGuide.docx
+#external_documents += $(CAFBASEROOT)/documents/SculptorUserGuide.pdf
+#external_documents += $(CAFBASEROOT)/documents/external/CAPE_ProgrammersGuide.pdf
+#DOC_EXCLUDE_LIST+= "InstallCygwin"
+endif
+
+# Add Android documents to the document list
+ifneq ($(no-android),y)
+external_documents += $(if $(CONFIG_TARGET_ANDROID),$(CAFBASEROOT)/platform/android/documents/CAF_SoftwareGuideAndroidAudioEffects_HAL.docx)
+external_documents += $(if $(CONFIG_TARGET_ANDROID),$(CAFBASEROOT)/platform/android/documents/CAF_SoftwareGuideConexantAudioSamrtControlApp.docx)
+endif
+
+# Add Linux documents to the document list
+ifneq ($(no-linux),y)
+external_documents += $(if $(CONFIG_TARGET_LINUX),$(CAFBASEROOT)/platform/linux/documents/CAF_FirmwareGuideLinux.docx)
+endif
+
+ifeq ($(CONFIG_CAFPLUGIN),y)
+external_documents += $(CAFBASEROOT)/platform/plugin/cafinterface/caf_plugin_interface.docx 
+endif
+
+fcp_src_docs :=	 $(filter-out $(DOCDIR)/~%.docx,$(wildcard $(DOCDIR)/*.docx)) \
+                 $(wildcard $(DOCDIR)/*.pdf) \
+                 $(wildcard $(DOCDIR)/*.xlsx) \
+                 $(wildcard $(DOCDIR)/*.xls) \
+                 $(wildcard $(DOCDIR)/*.htm)
+fcp_src_docs += $(if $(CONFIG_GUI_TOPICAL_HELP),$(CAFBASEROOT)/tuning/doc/ReadMe.docx)
+
+fcp_src_docs += $(if $(CONFIG_CAFPLUGIN),$(CAFBASEROOT)/platform/plugin/cafinterface/caf_plugin_interface.docx)
+fcp_docs     := $(addprefix $(FCP_DOCDIR)/,$(notdir $(subst .docx,.pdf, $(fcp_src_docs))))
+
+# Adding Topical Help
+ifeq ($(CONFIG_GUI_TOPICAL_HELP),y)
+TH_DOC_DIR := $(CAFBASEROOT)/documents/TopicalHelp
+TH_SRC_DOCS := $(wildcard $(TH_DOC_DIR)/*.htm) \
+              $(wildcard $(TH_DOC_DIR)/*.html) \
+              $(wildcard $(TH_DOC_DIR)/*.png) \
+              $(wildcard $(TH_DOC_DIR)/*.jpg)
+TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/EA_FCP.docx)
+#TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/EA_Tuning_and_Configuration_Process.html)
+TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/EA_Step1.docx)
+TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/EA_Step2.docx)
+TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/EA_Step3.docx)
+TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/EA_Step4.docx)
+TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/EA_Step5.docx)
+TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/EA_Step6.docx)
+TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/I2S_Protocol.docx)
+TH_SRC_DOCS += $(and $(CONFIG_CHIP_REVISION_RENO),$(CONFIG_MDL_SSDE),           $(TH_DOC_DIR)/Two_stage_trig_support.docx)
+TH_SRC_DOCS += $(and $(CONFIG_CHIP_REVISION_RENO),$(CONFIG_MDL_SSDE),           $(TH_DOC_DIR)/Two_stage_trig_support_using_I2S.docx)
+TH_SRC_DOCS += $(and $(CONFIG_CHIP_REVISION_RENO),$(CONFIG_MDL_CNXT_AURORA),    $(TH_DOC_DIR)/Two_stage_trig_support.docx)
+TH_SRC_DOCS += $(and $(CONFIG_CHIP_REVISION_RENO),$(CONFIG_MDL_CNXT_AURORA),    $(TH_DOC_DIR)/Two_stage_trig_support_using_I2S.docx)
+TH_SRC_DOCS += $(if $(CONFIG_USB_TX_BUFFER_FASTER),$(TH_DOC_DIR)/Two_stage_trig_support_using_USB.docx)
+TH_SRC_DOCS += $(if $(CONFIG_MDL_CNXT_AURORA),    $(TH_DOC_DIR)/Changing_Trigger_Model_Aurora.docx)
+TH_SRC_DOCS += $(and $(CONFIG_MDL_CNXT_AURORA),$(CONFIG_HOST_CODE),             $(TH_DOC_DIR)/Changing_Trigger_Model_Aurora_with_host_demo_code.docx)
+TH_SRC_DOCS += $(if $(CONFIG_MDL_GOOG),           $(TH_DOC_DIR)/Changing_Trigger_Model_Google.docx)
+TH_SRC_DOCS += $(if $(CONFIG_HID_SENDKEY),        $(TH_DOC_DIR)/Configuring_Event_Handler_for_Trigger_Detection.docx)
+TH_SRC_DOCS += $(if $(CONFIG_U6CH_STEREO_RECORD), $(TH_DOC_DIR)/U6CH_Recording.docx)
+TH_SRC_DOCS += $(if $(CONFIG_U6CH_TRUE6CH_RECORD),$(TH_DOC_DIR)/Recording_6CH.docx)
+TH_SRC_DOCS += $(if $(CONFIG_GUI_VIEW_CODEC),     $(TH_DOC_DIR)/Tuning_Process_for_Codecs.docx)
+TH_SRC_DOCS += $(if $(CONFIG_CHIP_REVISION_RENO), $(TH_DOC_DIR)/Mic_Mute_Support.docx)
+TH_SRC_DOCS += $(if $(CONFIG_HOST_CODE),          $(TH_DOC_DIR)/html)
+TH_SRC_DOCS += $(if $(CONFIG_GUI_VIEW_AS3XX_STANDARD), $(TH_DOC_DIR)/AS3xx_FCP.docx)
+TH_SRC_DOCS += $(if $(CONFIG_GUI_VIEW_AS3XX_STANDARD), $(TH_DOC_DIR)/OfflineTuning.docx)
+TH_SRC_DOCS += $(if $(CONFIG_GUI_VIEW_AS3XX_STANDARD), $(TH_DOC_DIR)/UpdatingCafLibOnAS371.docx)
+TH_SRC_DOCS += $(if $(CONFIG_GUI_VIEW_AS3XX_STANDARD), $(TH_DOC_DIR)/UpdatingCafLibOnVS550.docx)
+TH_SRC_DOCS += $(if $(CONFIG_GUI_VIEW_CODEC), $(TH_DOC_DIR)/OfflineTuning_for_Codecs.docx)
+TH_SRC_DOCS += $(TH_DOC_DIR)/Home.docx
+TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/AS33970_FCP.docx)
+#TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/AS33970_Tuning_and_Configuration_Process.html)
+TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/AS33970_Step1.docx)
+TH_SRC_DOCS += $(if $(CONFIG_MCU_DRV_SFS_CUSTOM0_PARTITION), $(TH_DOC_DIR)/AS33970_Step1_5.docx)
+TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/AS33970_Step2.docx)
+TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/AS33970_Step3.docx)
+TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/AS33970_Step4.docx)
+TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/AS33970_Step5.docx)
+TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/AS33970_Step6.docx)
+TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/One_CX31993_2_AS33970_EVKs.docx)
+TH_SRC_DOCS += $(if $(CONFIG_TARGET_TAHITI), $(TH_DOC_DIR)/Update_CX31993_firmware_on_AS33970_EVK.docx)
+
+TH_FCP_DOC_DIR := $(FCP_DOCDIR)/TopicalHelp
+TH_FCP_DOCS :=  $(addprefix $(TH_FCP_DOC_DIR)/,$(notdir $(subst .docx,.pdf, $(TH_SRC_DOCS))))
+
+$(TH_FCP_DOC_DIR)/%.pdf: $(TH_DOC_DIR)/%.docx
+	$(doc2pdf_recipe)
+
+$(TH_FCP_DOC_DIR)/%: $(TH_DOC_DIR)/%
+	$(copy_recipe)
+endif
+
+ifeq ('$(strip $(join $(documents),$(external_documents)))','')
+no-documentation 	:= y
+endif
+
+# Return names and IDs of Tcl scripts that are meant be compiled
+script_id     = $(shell echo $1 | $(SED) 's/.*\/$(prefix)_\(.\{4\}\).*\.bin/\1.caf/')
+script_bin_id	=	$(shell echo $1 | $(SED) 's/.*\/$(prefix)_\(.\{4\}\).*\.bin/\1/')
+
+# Return names and IDs of Blob scripts that are meant be compiled
+blob_id       = $(shell echo $1 | $(SED) 's/.*\/$(prefix)_\(.\{4\}\).*\.bin/\1.caf/')
+
+# Return the path used in TCL context in a correct format:
+# if on Cygwin, the path should be in the format like C:/cygwin
+# if on Linux, the path should be in the format like /cygdrive/c/cygwin
+ifeq ($(UNAME_O),Cygwin)
+  format_tcl_path = $(shell cygpath -m $(1))
+else
+  format_tcl_path = $(1)
+endif
+

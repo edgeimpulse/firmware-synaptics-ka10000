@@ -1,0 +1,326 @@
+/*------------------------------------------------------------------------------
+  Copyright (C) 2020 Synaptics Inc.
+  All rights reserved.
+
+  SYNAPTICS INC. CONFIDENTIAL AND PROPRIETARY
+
+  The information contained in this source code file
+  is strictly confidential and proprietary to Synaptics Inc.
+  ("Synaptics")
+
+  No part of this file may be possessed, reproduced or distributed, in
+  any form or by any means for any purpose, without the express written
+  permission of Synaptics Inc.
+
+  Except as otherwise specifically provided through an express agreement
+  with Synaptics that governs the confidentiality, possession, use
+  and distribution of the information contained in this file, SYNAPTICS
+  PROVIDES THIS INFORMATION "AS IS" AND MAKES NO REPRESENTATIONS OR
+  WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY IMPLIED
+  WARRANTY OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE,
+  TITLE OR NON-INFRINGEMENT, AND SPECIFICALLY DISCLAIMS SUCH WARRANTIES
+  AND REPRESENTATIONS.  IN NO EVENT WILL SYNAPTICS BE LIABLE FOR ANY DAMAGES
+  ARISING FROM THE USE OF THE INFORMATION CONTAINED IN THIS FILE.
+--------------------------------------------------------------------------------
+
+  File Name: AudioSmart_apis.dox
+
+------------------------------------------------------------------------------*/
+
+/**
+  \mainpage Introduction
+
+  This page describes the Host Code support provided for the Synaptics AudioSmart DSP Codecs.
+  
+  The AudioSmart DSP Codecs can be controlled by the following hardware interface:
+  - I2C Interface. <br/>
+    Detailed information about the I2C interface supported by AS33970 DSP Codec can be got from AS33970's Data sheet. 
+
+  Synaptics provides the following as part of Host Code support for AudioSmart DSP Codecs:
+  
+   \htmlonly
+   <object type="image/svg+xml" data="HostCodeAPIs.svg" alt="HostCodeAPIs.svg"/></object>
+   \endhtmlonly
+
+  \ref apis and the associated libraries (with source code) can be used by customers to 
+  - Develop their own applications to communicate with AudioSmart DSP Codec 
+  - Upgrade AudioSmart DSP firmware
+  - Write/Read data from Persistent Storage Area to store calibration data, serial number, etc.
+  - Thin-Client to communicate with AudioSmart DSP via the host processor
+
+  To build a Host SoC application, you need:
+  -# \ref apis header files from fcp/host/api/, and related libraries
+  -# \ref demo showing how to use the \ref apis 
+
+*/
+
+/**
+  \page apis Host SoC APIs
+
+   \htmlonly
+   <object type="image/svg+xml" data="HostCodeAPIs.svg" alt="HostCodeAPIs.svg"/></object>
+   \endhtmlonly
+  
+  The Host SoC APIs for Synaptics AudioSmart DSP Codecs are classified as follows:
+
+  -# \ref TopLevelAPIs  : The member APIs in this main API category are:
+    - \ref DspCtrlStatusAPI : This Top-Level APIs can be used to control Synaptics AudioSmart DSP Codecs and get their status.
+    - \ref BgUpgradeAPI : This Top-Level APIs can be used for upgrading Synaptics AudioSmart DSP's firmware over 
+                          I2C interface.
+	- \ref SilentUpgradeAPI : This Top-Level APIs can be used for upgrading Synaptics AudioSmart DSP's firmware 
+  -# \ref MidLevelAPIs  : These Mid-level APIs abstract the hardware interfaces to the Top-level APIs
+    - \ref SendCmdAPI
+  -# \ref InterfaceAPIs : These bottom layer APIs handle the low level communication with the host hardware.
+                          There are two APIs, one for each of the hardware interfaces on the Synaptics AudioSmart DSP.
+    - \ref I2CInterfaceAPI : The I2C Interface API is implemented by one of the following interfaces. Each of these implement
+                          the same API. To build the User Host application, 
+                          just one of the following interfaces must be compiled and linked in.
+      - \ref I2CdevIntf 
+      - \ref SienaI2CIntf      
+    - \ref USBInterfaceAPI : The USB Interface API is implemented by the following interfaces
+                          Each of these implement
+                          the same API. To build the User Host application, 
+                          just one of the following interfaces must be compiled and linked in with the User Host 
+                          application.
+      - \ref LibUsbIntf 
+      - \ref WinHIDIntf
+
+    \note  
+     - The \ref InterfaceAPIs are host specific. Example APIs using Linux and Windows Operating System are included in this package. 
+     - <b>For RTOS based systems, the \ref InterfaceAPIs need to be implemented by the customer.</b>
+     - If a particular API library is not provided for the customer's SoC platform, then the customer can build the appropriate library
+       by running "make" under the appropriate directory under fcp/host/api_src/. 
+     - For cross-compiling, please add the tool-chain path
+       to a new VARIANT in fcp/host/etc/Makefile_host_code.base
+     - The \ref DspCtrlStatusAPI can be used not just for communicating between Host and Synaptics AudioSmart DSP Codecs, but also from
+       one of the cores of the Synaptics AudioSmart DSP Codec to the main controller of that chip - for e.g. HiFi3 of AS33970 to M33 of 
+       AS33970.
+*/
+    
+/**
+  \page demo Host Demo Code
+   Synaptics provides Host Demo Source Code for the following demo applications. The tools are helpful for customers 
+   to understand the APIs that are provided by Synaptics and how they can be used. 
+   
+   - \subpage dsp_ctrl_demo
+   - \subpage calib_demo
+   - \subpage bg_upgrade_demo
+   - \subpage thin_client
+
+   \note 
+   - Each of the following Host Demo Code examples contain a README.txt file, containing instructions on how to build them.
+   - \ref bg_upgrade_demo only support background (not boot time) firmware upgrade. That means the device has a firmware runing before you upgrade a new firmware.
+
+ \page dsp_ctrl_demo Dsp Control and Status Host Demo Code
+   Host SoC Demo code for controlling AudioSmart DSP and getting its status can be found in fcp/host/demo/dsp_ctrl_status.
+   To make this Host User application the following 
+   needs to be linked in: 
+   - \ref DspCtrlStatusAPI 
+   - One of the implementations of the \ref SendCmdAPI interface
+   - One of the implementations of the \ref InterfaceAPIs interface
+   
+   The following diagram shows the components which are to be put together to make an application running on an embedded Host Processor 
+   for controlling the AudioSmart DSP Codec and to get status from it, when the connection between the Host Processor and the AudioSmart 
+   DSP Codec is I2C:
+   
+   \htmlonly
+   <object type="image/svg+xml" data="DspCtrlStatusPort.svg" alt="DspCtrlStatusPort.svg"/></object>
+   \endhtmlonly
+ 
+ \page calib_demo Calibration Host Demo Code
+   Calibration Demo code for calibrating AudioSmart DSP can be found in fcp/host/demo/calib.
+   To make this Host User application the following 
+   needs to be linked in: 
+   - \ref DspCtrlStatusAPI 
+   - One of the implementations of the \ref SendCmdAPI interface
+   - One of the implementations of the \ref InterfaceAPIs interface
+   
+   The following diagram shows the components which are to be put together to make an application running on an Windows PC where 
+   the AudioSmart DSP Codec is controlled using CX31993. The connection path is Windows PC <-> CX31993 <-> AS33970 
+   
+   \htmlonly
+   <object type="image/svg+xml" data="CalibDemo.svg" alt="CalibDemo.svg"/></object>
+   \endhtmlonly
+   
+   
+ \page bg_upgrade_demo Background Firmware Upgrade Host Demo Code 
+   Host SoC Demo Code which upgrades firmware for Synaptics Audio DSP using either I2C interface via Cypress CY7C68013A or I2C interface via CX31993 can be found 
+   in fcp/host/demo/bg_upgrade.
+   To make this Host User application the following needs to be linked in:
+   - \ref BgUpgradeAPI
+   - One of the implementations of the \ref SendCmdAPI interface
+   - One of the implementations of the \ref InterfaceAPIs interface
+
+   The following diagram shows the components which are to be put together to make an application running on an embedded Host Processor 
+   for upgrading the AudioSmart DSP Codec, when the connection between the Host Processor and the AudioSmart 
+   DSP Codec is I2C:
+   
+   \htmlonly
+   <object type="image/svg+xml" data="UpgradePort.svg" alt="UpgradePort.svg"/></object>
+   \endhtmlonly
+   
+ \page thin_client Thin Client Host Demo Code
+   Host SoC Demo Code to make a Thin Client, which enables the FCP Tuning GUI to communicate with
+   the Synaptics Audio DSP over TCP/IP or RFCOMM/GATT.
+   To make this Thin Client, the following needs to be linked in:
+   - One of the implementations of the \ref SendCmdAPI
+   - One of the implementations of the \ref InterfaceAPIs interface
+   
+   The following diagram shows the components which are to be put together to make a thin-client application running on an embedded Host Processor 
+   when the connection between the Host Processor and the AudioSmart DSP Codec is I2C:
+      
+   \htmlonly
+   <object type="image/svg+xml" data="ThinClientPort.svg" alt="ThinClientPort.svg"/></object>
+   \endhtmlonly
+   
+   
+*/
+
+/** 
+  \defgroup TopLevelAPIs Top-level APIs
+  These Top-level APIs can be used by the Host User applications to:
+  - Control AudioSmart DSP Codecs or get their status via I2C/USB interfaces
+  - Upgrade AudioSmart DSP Codecs via I2C interfaces
+
+  @{
+    \defgroup DspCtrlStatusAPI Synaptics Audio DSP Control and Status APIs
+    \brief
+     This API can be used to Control Synaptics AudioSmart DSP Codecs and get its status.
+     The pre-built libraries for this process are located under api/top_level_api/dsp_ctrl_status/lib/VARIANT
+     
+     The \ref DspCtrlStatusAPI can be used not just for communicating between Host and Synaptics AudioSmart DSP Codecs, but also from
+     one of the cores of the Synaptics AudioSmart DSP Codec to the main controller of that chip - for e.g. HiFi3 of AS33970 to M33 of 
+     AS33970.
+     
+     The various parts included in this API are:
+     
+    \defgroup BgUpgradeAPI Background Upgrade API
+    \brief
+     This API handles the protocols related to upgrading firmware using I2C for Synaptics AudioSmart DSP Codecs.
+     The pre-built libraries for this process are located under api/top_level_api/bg_upgrade_api/lib/VARIANT
+     
+     \defgroup CalibrationAPI Calibration APIs
+     \brief
+       This API can be used for Calibrating Synaptics AudioSmart DSP Codec. In reality these are part of \ref DspCtrlStatusAPI, but are 
+       listed here separately for clarity
+       
+     \addtogroup CalibrationAPI
+     @{
+       \addtogroup ANCCalibrationAPI
+       @{
+       @}
+       \addtogroup MuxCtrlStatusAPI
+       @{
+       @}
+       \addtogroup CptrMeterAPI
+       @{
+       @}
+       \addtogroup PlbkSigGen
+       @{
+       @}
+     @}
+  @}
+
+  \defgroup MidLevelAPIs Mid-level APIs
+  These Mid-Level APIs:
+  - Are not designed to be used directly by the Host User applications. 
+  @{
+     \defgroup SendCmdAPI Send Command API
+     This API supports sending commands to \ref I2CInterfaceAPI (and \ref USBInterfaceAPI when the I2C is connected via CX31993). \n
+     It also provides abstraction to sending of commands to \ref I2CInterfaceAPI.\n
+     The pre-built libraries for this process are located under api/mid_level_api/sendcmd/lib/VARIANT
+     @{
+       \defgroup SendCmd_I2CIntf SendCmd Protocol implemented for I2C Interface
+       This Library implements \ref SendCmdAPI for \ref I2CInterfaceAPI
+       
+       \defgroup SendCmd_I2CF3 SendCmd Protocol implemented for Host Processor <-USB-> CX31993 <-I2C-> AudioSmart DSP
+       This Library implements \ref SendCmdAPI, when the Host Processor is connected to CX31993 via USB and 
+       CX31993 is inturn connected to AudioSmart DSP using I2C interface.
+       
+       \defgroup SendCmd_USB SendCmd Protocol implemented for USB Interface
+       This Library implements \ref SendCmdAPI for \ref USBInterfaceAPI.
+     @}
+  @}
+
+  \defgroup InterfaceAPIs Interface APIs
+  This bottom layer API does the actual low level 
+  communication using the I2C and USB interfaces.
+  - The Mid-level and Top-level APIs use this API to communicate with the
+    host hardware.
+  - These APIs are host specific. Example APIs using Linux and Windows are included in this package. 
+    <b> For RTOS based systems, these APIS must be implemented by the customer.</b>
+  - There are two interface APIs, one for each of the two hardware interfaces, and by which one can talk to the Synaptics Audio DSP.
+    - \ref I2CInterfaceAPI
+    - \ref USBInterfaceAPI
+  @{
+    \defgroup I2CInterfaceAPI I2C Interface API
+    This API is used for communicating with the Synaptics Audio DSP using the I2C interface.\n
+    This API is implemented by the following interfaces.\n
+    Only one of these interfaces need to be compiled and linked into the Host User application\n
+    The pre-built libraries for this process are located under api/interface_api/i2c_interface/lib/VARIANT
+    - \ref I2CdevIntf
+    - \ref SienaI2CIntf    
+
+    @{
+      \defgroup I2CdevIntf I2C Interface using i2c-dev Linux driver for Linux based host
+      This interface is used for communicating with Synaptics AudioSmart DSP Codecs using Linux's i2c-dev driver.\n
+      The information about Linux's i2c-dev driver can be found at 
+      <a ref="https://www.kernel.org/doc/Documentation/i2c/dev-interface">
+      https://www.kernel.org/doc/Documentation/i2c/dev-interface</a>.\n
+      This interface also has a thin-layer to send information over to the Synaptics Audio DSP using
+      facilities provided by the Linux's i2c-dev driver.
+      - This interface implements \ref I2CInterfaceAPI
+  
+      \defgroup SienaI2CIntf I2C Interface using Cypress CY7C68013A Windows driver for Windows based host
+      This interface is used for communicating with Synaptics AudioSmart DSP Codecs using Cypress CY7C68013A 
+      Windows driver.\n
+      The information about Cypress CY7C68013A USB-to-I2C controller can be found at 
+      <a ref="http://www.cypress.com/file/138911/download">
+      http://www.cypress.com/file/138911/download</a>.\n
+      This interface also has a thin-layer to send information over to the Synaptics Audio DSP using
+      facilities provided by the Cypress CY7C68013A Windows driver.
+      - This interface implements \ref I2CInterfaceAPI
+      
+      \cond   
+      \defgroup AlsaI2CIntf I2C Interface using Synaptics Audio DSP ALSA Linux driver for Linux based host (can be used only for \ref SendCmdAPI)
+      This interface is used for communicating with Synaptics AudioSmart DSP Codecs using Synaptics Audio DSP\n
+      ALSA Linux driver.
+      The information about Linux's ALSA driver can be found at 
+      <a ref="https://www.alsa-project.org/alsa-doc/alsa-lib/asoundlib_8h.html">
+      https://www.alsa-project.org/alsa-doc/alsa-lib/asoundlib_8h.html</a>.\n
+      This interface also has a thin-layer to send information over to the Synaptics Audio DSP using
+      facilities provided by the Synaptics Audio DSP's ALSA Linux driver
+      \todo Add link to ALSA driver for CX2092X
+      \endcond
+    @}
+
+    \defgroup USBInterfaceAPI USB Interface API
+    This API is used for communicating with the Synaptics Audio DSP using the USB interface \n
+    This API is implemented by the following interfaces. \n
+    Only one of these interfaces need to be compiled and linked into the Host User application \n
+    The pre-built libraries for this process are located under api/interface_api/usb_interface/lib/VARIANT
+    - \ref LibUsbIntf
+    - \ref WinHIDIntf
+
+    @{
+      \defgroup LibUsbIntf USB Interface using libusb library for Linux based host
+      This interface is used for communicating with Synaptics AudioSmart DSP Codecs using libusb library.\n
+      The libusb source-code and precompiled library can be got from <a ref="http://libusb.info/">
+      http://libusb.info/</a>.\n
+      This interface has a thin-layer to send information over to the Synaptics Audio DSP using
+      facilities provided by the libusb library      
+      - This interface implements \ref USBInterfaceAPI
+  
+      \defgroup WinHIDIntf USB Interface using Windows HID Driver for Windows based host
+      This interface is used for communicating with Synaptics AudioSmart DSP Codecs using Windows' HID driver. \n
+      The information about Windows HID driver can be found at 
+      <a ref="https://docs.microsoft.com/en-us/windows-hardware/drivers/hid/">
+      https://docs.microsoft.com/en-us/windows-hardware/drivers/hid/</a>. \n
+      This interface also has a thin-layer to send information over to the Synaptics Audio DSP using
+      facilities provided by the Windows' HID driver
+      - This interface implements \ref USBInterfaceAPI
+    @}
+  @}
+
+*/
+

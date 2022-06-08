@@ -1,0 +1,286 @@
+################################################################################
+#
+#  CONEXANT SYSTEMS, INC. CONFIDENTIAL AND PROPRIETARY
+#
+#  The information contained in this source code file
+#  is strictly confidential and proprietary to Conexant Systems, Inc.
+#  ("Conexant")
+#
+#  No part of this file may be possessed, reproduced or distributed, in
+#  any form or by any means for any purpose, without the express written
+#  permission of Conexant Systems Inc.
+#
+#  Except as otherwise specifically provided through an express agreement
+#  with Conexant that governs the confidentiality, possession, use
+#  and distribution of the information contained in this file, CONEXANT
+#  PROVIDES THIS INFORMATION "AS IS" AND MAKES NO REPRESENTATIONS OR
+#  WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY IMPLIED
+#  WARRANTY OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE,
+#  TITLE OR NON-INFRINGEMENT, AND SPECIFICALLY DISCLAIMS SUCH WARRANTIES
+#  AND REPRESENTATIONS.  IN NO EVENT WILL CONEXANT BE LIABLE FOR ANY DAMAGES
+#  ARISING FROM THE USE OF THE INFORMATION CONTAINED IN THIS FILE.
+#
+#  Copyright (C) 2009-2019 Conexant Systems Inc.
+#  All rights reserved.
+#
+################################################################################
+
+export UNAME   := $(shell uname)
+export UNAME_O := $(shell uname -o)
+
+ifeq ($(CONFIG_CAF_FLAVOR_CAPE2),y)
+
+ifneq ($(UNAME),Linux)
+
+ifeq ($(CONFIG_CHIP_VERSION_Z1),y)
+CAPE_PLUS_TOOLS_DIR := $(cape2_DIR)
+CAPE_TOOL_NAME      := P-2019.03-SP3
+CAPE_LIB_NAME       := cape
+export CHESSDIR=C:\Synopsys\ASIP Programmer\P-2019.03-SP3\win64\chessdir
+export CHESSROOT=C:\Synopsys\ASIP Programmer\P-2019.03-SP3\win64
+export CAPE2CHESSDIR=C:\Synopsys\ASIP Programmer\P-2019.03-SP3
+export "$(echo PATH=$PATH | awk '{gsub(\Q-2020.03-SP3\, "P-2019.03-SP3")}1')"
+else
+CAPE_PLUS_TOOLS_DIR := $(CAPE_PLUS_TOOLS_ROOT)
+CAPE_TOOL_NAME      := Q-2020.03-SP3
+CAPE_LIB_NAME       := cape2
+export CHESSDIR=C:\Synopsys\ASIP Programmer\Q-2020.03-SP3\win64\chessdir
+export CHESSROOT=C:\Synopsys\ASIP Programmer\Q-2020.03-SP3\win64
+export CAPE2CHESSDIR=C:\Synopsys\ASIP Programmer\Q-2020.03-SP3
+export "$(echo PATH=$PATH | awk '{gsub(\P-2019.03-SP3\, "Q-2020.03-SP3")}1')"
+endif
+
+else
+
+# TODO: No Support for Tahiti Z1 on Linux
+CAPE_PLUS_TOOLS_DIR := $(CAPE_PLUS_TOOLS_ROOT)
+CAPE_TOOL_NAME      := Q-2020.03-SP3
+CAPE_LIB_NAME       := cape2
+export CHESSDIR=$(CAPE2CHESSDIR)/linux64/chessdir
+export CHESSROOT=$(CAPE2CHESSDIR)/linux64
+export "$(echo PATH=$PATH | awk '{gsub(\P-2019.03-SP3\, "Q-2020.03-SP3")}1')"
+
+endif
+
+endif
+
+# Preparation for error messages
+null 		:=
+space 		:= ${null} ${null}
+${space} 	:= ${space}
+tab			:= ${space}${ }${ }${space}
+dollar 		:= ${null}$$${null}
+define \n
+
+
+endef
+newline		:= ${\n}
+
+# tool definitions
+SED   		:= sed
+CP    		:= cp -pfr
+MKDIR 		:= mkdir -p
+RM    		:= rm -fr
+MV	        := mv -f
+GREP        := egrep
+# DOC2PDF is a simply expanded variable which would expand the function $(shell cygpath ...)
+# when it's defined, so have to put a condition here to prevent error when running on Linux
+ifeq ($(UNAME_O),Cygwin)
+  DOC2PDF   := cscript /nologo $(shell cygpath -m $(CAFBASEROOT)/etc/cnxt_doc2pdf.vbs)
+endif
+
+empty 		:= 
+space 		:= $(empty) $(empty)
+sep             := $(empty),$(empty)
+
+# Sdx - for creating the starkit and starpack
+SDX 		:= $(CAFBASEROOT)/tools/sdx-20110317.kit
+# Tclkit to execute sdx from the command line (no GUI)
+ifneq ($(UNAME),Linux)
+TCLKIT 	:=  $(CAFBASEROOT)/tools/tclkitsh-8.5.9-win32.upx.exe
+CHESSMK :=  $(CAPE2CHESSDIR)/win64/bin/WINbin/chessmk
+else
+TCLKIT 	:=  $(CAFBASEROOT)/tools/tclkit85-linux-x86
+CHESSMK :=  $(CAPE2CHESSDIR)/linux64/bin/LNa64bin/chessmk
+endif
+
+# The MSBuild.exe is required for building Simulator, Golem.dll and APO on 
+# Windows platform.The following code block define the search order for 
+# MSBuild.exe tool. The varible $(MSBUILD) is a path to msbuild.exe tool.
+# 
+#  1. Using $(MSBUILD) if $(MSBUILD) is defined. 
+#  2. Using $(MSBUILDPATH)/MSBuild.exe if ( OS=Windows) AND ($(MSBUILDPATH) is defined.)
+#  3. Using vshwere tool to search msbuild with the following edition criteria if OS=Windows
+#                         [Community], [Professional], [Enterprise] or [BuildTools].
+#  4. Using MSbuild.exe
+#
+#  Finnally, the $(MSBUILD) will be exported for sub-bmake use.
+ifeq ($(MSBUILD),)
+    ifeq ($(UNAME_O),Cygwin)
+        ifeq ($(MSBUILDPATH),)
+            MAKEFILE_DEF_PATH := $(dir $(realpath $(filter %Makefile.def,$(MAKEFILE_LIST))))
+            MSBUILDPATH:=$(subst $\",,$(shell cmd /c "$(shell cygpath -w $(MAKEFILE_DEF_PATH))get-msbuild-path.cmd"))
+        endif
+		MSBUILD := $(shell cygpath -u "$(MSBUILDPATH)")/MSBuild.exe
+    endif
+    MSBUILD := $(if $(MSBUILD),$(MSBUILD),"MSBuild.exe")
+    export MSBUILD
+endif
+
+DOC_EXCLUDE_LIST+= "MyAdminInfo"
+
+define copy_recipe =
+	$(V)echo "$(CP) $< $@"
+	$(CP) $< $@
+endef
+
+define mkdir_recipe =
+	$(V)echo "MKDIR $@"
+	$(MKDIR) $@
+endef
+
+define remove_recipe =
+	$(V)echo "RM    $^"
+	$(V)$(foreach f,$^,$(info RM    $(notdir $(f))))
+	$(RM) $^
+endef
+
+# Only define doc2pdf_recipe if running on Cygwin as currently there
+# is no DOC2PDF tool added for Linux. If the condition ifeq ($(UNAME_O),Cygwin)
+# is not there and Linux builds get into doc2pdf_recipe then Jenkins would report:
+# /bin/sh: 4: /nologo: not found
+# Exit code of VS script is not propagated by cscript tool
+# Check at the end if target file was created; fail otherwise
+ifeq ($(UNAME_O),Cygwin)
+define doc2pdf_recipe =
+	$(V)echo DOC2PDF $(notdir $<)
+	-$(RM) $@
+	echo "  Exclude: $(subst $(space),$(sep),${DOC_EXCLUDE_LIST})"
+	($(DOC2PDF) /nologo $(shell cygpath -m $<) /o:$(shell cygpath -m $@) /exclude:"$(subst $(space),$(sep),${DOC_EXCLUDE_LIST})" && ls $@ >& /dev/null) || ($(RM) $@ && false)
+endef
+endif
+
+# Modify the processor name in .prx files based on $(CAPE_LIB_NAME) whose value depends on CONFIG_CHIP_VERSION_*
+define modify_prx_file = 
+	$(shell $(SED) -i -r 's/processor="cape2?"/processor="$(CAPE_LIB_NAME)"/' $(1))
+endef
+
+# Copy one .blob file from config/aurora_models/<model_dir> into the sub-directory scripts of a configuration 
+# directory.
+# The dest file name is a prefix + the source file name where the prefix should be the "prefix" variable that 
+# is defined at the beginning of the config makefile (e.g. "as3397x") and followed by an underscore, the first 
+# 4 characters of the <model_dir> (e.g. "TAHS"), and another underscore
+define copy_blob_file =
+    $(eval model_dir        = $(1))
+	$(eval prefix           = $(2))
+    $(eval source_file_path = $(wildcard $(conf_dir_path)/aurora_models/$(model_dir)/*.blob))
+    $(eval source_file_name = $(notdir $(source_file_path)))
+    $(eval 4chars           = $(shell echo "$(model_dir)" | $(SED) -r 's/(T.*)_.*/\1/'))
+    $(eval dest_file_name   = $(prefix)_$(4chars)_$(source_file_name))
+	$(V)echo "$(CP) $(source_file_path) scripts/$(dest_file_name)"
+	$(shell $(CP) $(source_file_path) scripts/$(dest_file_name))
+endef
+
+# Copy one or multiple .blob files from config/aurora_models/<model_dir> into the sub-directory scripts of 
+# a configuration directory. 
+# This function is called in the Makefile under some configuration directories.
+define copy_blob_files =
+    $(eval model_dirs         = $(1))
+	$(eval prefix             = $(2))
+	# first delete any existing .blob file(s) under the sub-directory scripts of a configuration directory 
+	# before copy.
+    $(eval old_dest_file_path = $(wildcard scripts/*.blob))
+	$(if $(old_dest_file_path),$(foreach blob_file,$(old_dest_file_path),$(shell $(RM) $(blob_file))))
+    # then copy
+	$(foreach model_dir,$(model_dirs),$(call copy_blob_file,$(model_dir),$(prefix)))
+endef
+
+ifeq ($(CONFIG_LOADED),y)
+ifeq ($(CONFIG_CPU_PC),y)
+ifeq ($(CROSSCOMPILERROOT),)
+CC_PREFIX =
+else
+CC_PREFIX = $(CROSSCOMPILERROOT)/$(CONFIG_TARGET_EXTENTION)-
+endif
+else
+ifeq ($(CROSSCOMPILERROOT),)
+ifneq (Cygwin,$(UNAME_O))
+CC_PREFIX =
+endif
+endif
+CC_PREFIX = $(CROSSCOMPILERROOT)/$(CONFIG_TARGET_EXTENTION)-
+endif
+endif
+
+ifeq ($(and $(CONFIG_CAF_FLAVOR_CAPE2), $(CONFIG_OS_LINUX)), y)
+    ifeq ($(CROSSCOMPILERROOT),)
+        CC_PREFIX =
+    else
+        CC_PREFIX = $(CROSSCOMPILERROOT)/$(CONFIG_TARGET_EXTENTION)-
+    endif
+endif
+
+ifeq ($(or $(CONFIG_CC_XCC),$(CONFIG_DSP_BUILD_XTENSA_RELEASE)),y)
+ifeq (, $(shell which xt-xcc 2> /dev/null))
+CC              =       xt-clang
+CPP             =       xt-clang++
+CFLAG_EXTRA     =       -x c 
+else
+CC              =       xt-xcc
+CPP             =       xt-xc++
+CFLAG_EXTRA     =       -x c++
+endif
+LD              =       xt-ld
+AS              =       xt-as
+AR              =       xt-ar
+OBJDUMP         =       xt-objdump
+OBJCOPY         =       xt-objcopy
+SIZE            =       xt-size
+
+#common flags for all HiFi4 libraries, such as CAF, freertos
+CPPEXTRA    =   -mlongcalls -x c++ -DCAF_BUILD_ENV=CAF_BUILD_XTENSA -g  
+ASEXTRA     =   -c -g -Wa,--longcalls -DXTOS_UNPACK -DCAF_BUILD_ENV=CAF_BUILD_XTENSA
+
+define asm_object_rule
+asm_objects-y += $$(notdir $(1)).o
+$$(notdir $(1)).o: $1.S
+	$$(V)echo $$(CPP) $$<
+	$$(CPP) $$(ASFLAGS) $$(IFLAGS) -c $$< -o $$@ 
+endef
+
+
+define c_object_rule
+objects-y += $$(notdir $(1)).o
+$$(notdir $(1)).o: $1.c
+	$$(V)echo $$(CPP) $$<
+	$$(CPP) $$(CPPFLAGS) $$(IFLAGS) -c  $$< -o $$@
+endef
+
+else
+CC              =       $(CC_PREFIX)g++
+CPP             =       $(CC_PREFIX)g++
+LD              =       $(CC_PREFIX)ld
+AR              =       $(CC_PREFIX)ar
+endif
+
+### RHJ: this is a hack, because the "define" above do not work on Linux
+ifeq ($(UNAME),Linux)
+#copy_recipe   = $(V)echo "CP    $@"; $(CP) $< $@
+#mkdir_recipe  = $(V)echo "MKDIR $@"; $(MKDIR) $@
+#remove_recipe = $(V)$(foreach f,$^,$(info RM    $(notdir $(f)))); $(RM) $^
+endif
+
+
+ifeq ($(UNAME_O),Cygwin)
+    USER_MCONF_EXE := bin/mconf
+else
+    USER_MCONF_EXE := bin/mconf-linux
+endif
+
+define user_config
+	echo "Running on $(UNAME_O)"
+	cp $(CAFBASEROOT)/config/.config .config
+	./$(USER_MCONF_EXE)	../../Kconfig
+	cp .config $(CAFBASEROOT)/config/.config
+	rm .config*
+endef
