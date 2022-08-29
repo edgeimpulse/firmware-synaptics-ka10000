@@ -1,10 +1,12 @@
 SDK/mcusdk/platform/tahiti/m33/app/tensaiflow/output/
 SDK/fcp/build/*.img
+SDK/fcp/build/*.bin
 SDK/fcp/temp/
+SDK/mcusdk/platform/tahiti/m33/app/**/edge_impulse/edge-impulse-sdk/
+SDK/mcusdk/platform/tahiti/m33/app/**/edge_impulse/edge-impulse-sdk
 SDK/mcusdk/platform/tahiti/m33/build/*
 !SDK/mcusdk/platform/tahiti/m33/build/libos_ns.a
 !SDK/mcusdk/platform/tahiti/m33/build/libsys_ns.a
-!SDK/mcusdk/platform/tahiti/m33/build/libusr_ns.a
 !SDK/mcusdk/platform/tahiti/m33/build/libusrkpd_ns.a
 !SDK/mcusdk/platform/tahiti/m33/build/tahiti_gcc_arm_ns.ld
 
@@ -16,4 +18,3 @@ SDK/mcusdk/platform/tahiti/m33/build/*
 *.o
 
 !SDK/mcusdk/platform/tahiti/m33/app/**/tensaiflow-model/*.bin
-!SDK/fcp/build/*.bin

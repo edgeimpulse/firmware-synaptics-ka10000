@@ -1,0 +1,14 @@
+SDK/platform/tahiti/m33/app/*
+!SDK/mcusdk/platform/tahiti/m33/app/tensaiflow
+!SDK/mcusdk/platform/tahiti/m33/app/firmware/**
+SDK/fcp/**
+!SDK/mcusdk/platform/tahiti/m33/build/libos_ns.a
+!SDK/mcusdk/platform/tahiti/m33/build/libsys_ns.a
+!SDK/mcusdk/platform/tahiti/m33/build/libusrkpd_ns.a
+!SDK/mcusdk/platform/tahiti/m33/build/tahiti_gcc_arm_ns.ld
+!SDK/fcp/config
+!SDK/fcp/etc
+!SDK/fcp/orig_build
+!SDK/fcp/platform
+!SDK/fcp/tools
+!SDK/mcusdk/platform/tahiti/m33/build

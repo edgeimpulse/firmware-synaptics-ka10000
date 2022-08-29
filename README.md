@@ -95,3 +95,18 @@ In the Studio, navigate to **Deployment**, choose **TENSAI Flow library**, choos
 Extract the contents into `SDK/mcusdk/platform/tahiti/m33/app/firmware/edge_impulse`. Be sure to remove the previous model folders (`edge-impulse-sdk`, `model-parameters` and `tensaiflow-model`).
 
 **NOTE**: only Quantized (int8) Grayscale image models are supported.
+
+## Troubleshooting
+
+### Lost serial connection
+
+It may occur after a power-off/on cycle (e.g with `SW1`) or after flashing new firmware that you may no longer have a working serial connection. Try the following steps to repair the serial connection:
+
+1. power-on the board.
+1. remove all cables between the board and the host pc.
+1. re-connect all cables.
+1. power-off/on the board.
+
+### Image/Pixel (Color) Distortion
+
+If the image pixels seems distorted/inversed try power cycling the device (e.g. with `SW1`) to fix the issue.
