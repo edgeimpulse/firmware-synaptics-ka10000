@@ -18,3 +18,5 @@ SDK/mcusdk/platform/tahiti/m33/build/*
 *.o
 
 !SDK/mcusdk/platform/tahiti/m33/app/**/tensaiflow-model/*.bin
+
+/copy-sdk.sh
