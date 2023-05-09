@@ -101,7 +101,6 @@ void ei_printf_float(float f);
 void ei_printfloat(int n_decimals, int n, ...);
 
 void ei_write_string(char *data, int length);
-void ei_putc(char cChar);
 
 /* Reference to object for external usage ---------------------------------- */
 extern EiDeviceSynapticsKa10000 EiDevice;

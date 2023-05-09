@@ -29,6 +29,7 @@
 #include "ei_config.h"
 
 #include "ei_device_synaptics_ka10000.h"
+#include "edge-impulse-sdk/porting/ei_classifier_porting.h"
 
 
 #define EDGE_IMPULSE_AT_COMMAND_VERSION        "1.7.0"
@@ -73,12 +74,14 @@ static void at_device_info() {
 static void at_get_inference() {
     ei_printf("Sensor:           %d\r\n", EI_CLASSIFIER_SENSOR);
 
-#if EI_CLASSIFIER_OBJECT_DETECTION_CONSTRAINED == 1
+#if EI_CLASSIFIER_OBJECT_DETECTION
+    #if EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_FOMO
         const char *model_type = "constrained_object_detection";
-#elif EI_CLASSIFIER_OBJECT_DETECTION
+    #else
         const char *model_type = "object_detection";
+    #endif
 #else
-        const char *model_type = "classification";
+    const char *model_type = "classification";
 #endif
     ei_printf("Model type:       %s\r\n", model_type);
 }
@@ -378,7 +381,7 @@ static void at_list_files() {
 }
 
 static void at_read_file_data(uint8_t *buffer, size_t size) {
-    base64_encode((const char*)buffer, size, ei_putc);
+    base64_encode((const char*)buffer, size, ei_putchar);
 }
 
 static void at_read_file(char *filename, char *baudrate_s) {

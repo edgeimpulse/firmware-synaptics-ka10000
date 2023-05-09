@@ -31,6 +31,7 @@
 #include "ei_camera.h"
 #include "mcu.h"
 #include "firmware-sdk/jpeg/encode_as_jpg.h"
+#include "edge-impulse-sdk/porting/ei_classifier_porting.h"
 extern "C" {
 #include "mem_alloc_al.h"
 }
@@ -102,35 +103,16 @@ void run_nn(bool debug, int delay_ms, bool use_max_baudrate) {
             break;
         }
 
-        // Print framebuffer as JPG during debugging
         if (debug) {
-
-            size_t jpeg_buffer_size = EI_CLASSIFIER_INPUT_WIDTH * EI_CLASSIFIER_INPUT_HEIGHT >= 128 * 128 ?
-                1024 * 12:
-                1024 * 8;
-
-            uint8_t *jpeg_buffer = (uint8_t*)allocMem(SHM, jpeg_buffer_size);
-            if (!jpeg_buffer) {
-                ei_printf("ERR: Failed to allocate JPG buffer\r\n");
-                return;
-            }
-
             ei_printf("Begin output\n");
-
+            ei_printf("Framebuffer: ");
             size_t out_size;
-            int x = encode_bw_signal_as_jpg(&signal, EI_CLASSIFIER_INPUT_WIDTH, EI_CLASSIFIER_INPUT_HEIGHT, jpeg_buffer, jpeg_buffer_size, &out_size);
+            int x = encode_bw_signal_as_jpg_and_output_base64(&signal, EI_CLASSIFIER_INPUT_WIDTH, EI_CLASSIFIER_INPUT_HEIGHT);
             if (x != 0) {
                 ei_printf("Failed to encode frame as JPEG (%d)\n", x);
                 break;
             }
-
-            ei_printf("Framebuffer: ");
-            base64_encode((const char*)jpeg_buffer, out_size, &ei_putchar);
             ei_printf("\r\n");
-
-            if (jpeg_buffer) {
-                freeMem(jpeg_buffer);
-            }
         }
 
         // print the predictions

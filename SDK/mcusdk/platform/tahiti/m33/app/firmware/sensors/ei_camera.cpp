@@ -174,7 +174,6 @@ void ei_camera_deinit(void) {
  */
 bool ei_camera_capture(uint32_t img_width, uint32_t img_height, uint8_t *out_buf) {
     bool do_resize = false;
-    bool do_crop = false;
 
     if (!is_initialised) {
         ei_printf("ERR: Camera is not initialized\r\n");
@@ -209,8 +208,8 @@ bool ei_camera_capture(uint32_t img_width, uint32_t img_height, uint8_t *out_buf
 
     if (do_resize) {
 
-        // if only resizing then and out_buf provided then use itinstead.
-        if (out_buf && !do_crop) ei_camera_capture_out = out_buf;
+        // if out_buf provided then use out_buf instead.
+        if (out_buf) ei_camera_capture_out = out_buf;
 
         //ei_printf("resize cols: %d, rows: %d\r\n", resize_col_sz,resize_row_sz);
         ei::image::processing::resize_image(
@@ -318,7 +317,7 @@ static bool take_snapshot(size_t width, size_t height, bool print_oks)
     base64_encode(
         (const char *)ei_camera_capture_out,
         height * width,
-        ei_putc);
+        ei_putchar);
     EiDevice.set_state(eiStateIdle);
 
     ei_printf("\r\n");

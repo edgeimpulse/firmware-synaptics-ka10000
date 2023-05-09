@@ -25,6 +25,7 @@
 #include "ei_synaptics_fs_commands.h"
 
 #include "ei_camera.h"
+#include "edge-impulse-sdk/porting/ei_classifier_porting.h"
 //#include "ei_inertialsensor.h"
 //#include "ei_microphone.h"
 
@@ -420,16 +421,6 @@ void ei_write_string(char *data, int length)
     for (int i = 0; i < length; i++) {
         ei_putchar(*(data++));
     }
-}
-
-/**
- * @brief      Write single character to serial output
- *
- * @param[in]  cChar  The character
- */
-void ei_putc(char cChar)
-{
-    ei_putchar(cChar);
 }
 
 /* Private functions ------------------------------------------------------- */

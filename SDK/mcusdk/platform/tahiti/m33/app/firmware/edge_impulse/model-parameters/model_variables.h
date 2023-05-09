@@ -25,14 +25,120 @@
 #include <stdint.h>
 #include "model_metadata.h"
 
+
+#include "edge-impulse-sdk/classifier/ei_model_types.h"
+#include "edge-impulse-sdk/classifier/inferencing_engines/engines.h"
+
 const char* ei_classifier_inferencing_categories[] = { "lamp", "plant", "unknown" };
 
-uint8_t ei_dsp_config_12_axes[] = { 0 };
-const uint32_t ei_dsp_config_12_axes_size = 1;
-ei_dsp_config_image_t ei_dsp_config_12 = {
-    1,
-    1,
-    "Grayscale"
+uint8_t ei_dsp_config_3_axes[] = { 0 };
+const uint32_t ei_dsp_config_3_axes_size = 1;
+ei_dsp_config_image_t ei_dsp_config_3 = {
+    3, // uint32_t blockId
+    1, // int implementationVersion
+    1, // int length of axes
+    "RGB" // select channels
 };
+
+#define EI_DSP_PARAMS_GENERATED 1
+
+const size_t ei_dsp_blocks_size = 1;
+ei_model_dsp_t ei_dsp_blocks[ei_dsp_blocks_size] = {
+    { // DSP block 3
+        27648,
+        &extract_image_features,
+        (void*)&ei_dsp_config_3,
+        ei_dsp_config_3_axes,
+        ei_dsp_config_3_axes_size
+    }
+};
+
+ei_config_tensaiflow_graph_t ei_config_tflite_graph_0 = {
+    .implementation_version = 1,
+    .input_datatype = EI_CLASSIFIER_DATATYPE_INT8,
+    .input_quantized =  1,
+    .input_scale = 0.003921568859368563,
+    .input_zeropoint = -128,
+    .output_datatype = EI_CLASSIFIER_DATATYPE_INT8,
+    .output_quantized = 1,
+    .output_scale = 0.00390625,
+    .output_zeropoint = -128,
+};
+
+ei_learning_block_config_tflite_graph_t ei_learning_block_config_0 = {
+    .implementation_version = 1,
+    .block_id = 0,
+    .object_detection = 0,
+    .object_detection_last_layer = EI_CLASSIFIER_LAST_LAYER_UNKNOWN,
+    .output_data_tensor = 0,
+    .output_labels_tensor = 1,
+    .output_score_tensor = 2,
+    .graph_config = (void*)&ei_config_tflite_graph_0
+};
+
+const size_t ei_learning_blocks_size = 1;
+ei_learning_block_t ei_learning_blocks[ei_learning_blocks_size] = {
+    {
+        &run_nn_inference,
+        (void*)&ei_learning_block_config_0,
+    },
+};
+
+const ei_model_performance_calibration_t ei_calibration = {
+    1, /* integer version number */
+    false, /* has configured performance calibration */
+    (int32_t)(EI_CLASSIFIER_RAW_SAMPLE_COUNT / ((EI_CLASSIFIER_FREQUENCY > 0) ? EI_CLASSIFIER_FREQUENCY : 1)) * 1000, /* Model window */
+    0.8f, /* Default threshold */
+    (int32_t)(EI_CLASSIFIER_RAW_SAMPLE_COUNT / ((EI_CLASSIFIER_FREQUENCY > 0) ? EI_CLASSIFIER_FREQUENCY : 1)) * 500, /* Half of model window */
+    0   /* Don't use flags */
+};
+
+
+const ei_impulse_t impulse_42_1 = {
+    .project_id = 42,
+    .project_owner = "Edge Impulse Inc.",
+    .project_name = "Demo: Image Recognition",
+    .deploy_version = 1,
+
+    .nn_input_frame_size = 27648,
+    .raw_sample_count = 9216,
+    .raw_samples_per_frame = 1,
+    .dsp_input_frame_size = 9216 * 1,
+    .input_width = 96,
+    .input_height = 96,
+    .input_frames = 1,
+    .interval_ms = 1,
+    .frequency = 0,
+    .dsp_blocks_size = ei_dsp_blocks_size,
+    .dsp_blocks = ei_dsp_blocks,
+
+    .object_detection = 0,
+    .object_detection_count = 0,
+    .object_detection_threshold = 0,
+    .object_detection_last_layer = EI_CLASSIFIER_LAST_LAYER_UNKNOWN,
+    .fomo_output_size = 0,
+
+    .tflite_output_features_count = 3,
+    .learning_blocks_size = ei_learning_blocks_size,
+    .learning_blocks = ei_learning_blocks,
+
+    .inferencing_engine = EI_CLASSIFIER_TENSAIFLOW,
+
+    .quantized = 1,
+
+    .compiled = 0,
+
+    .sensor = EI_CLASSIFIER_SENSOR_CAMERA,
+    .fusion_string = "image",
+    .slice_size = (9216/4),
+    .slices_per_model_window = 4,
+
+    .has_anomaly = 0,
+    .label_count = 3,
+    .calibration = ei_calibration,
+    .categories = ei_classifier_inferencing_categories
+};
+
+const ei_impulse_t ei_default_impulse = impulse_42_1;
 
 #endif // _EI_CLASSIFIER_MODEL_METADATA_H_
