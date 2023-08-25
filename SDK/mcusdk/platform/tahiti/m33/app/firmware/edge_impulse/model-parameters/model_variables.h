@@ -73,6 +73,8 @@ ei_learning_block_config_tflite_graph_t ei_learning_block_config_0 = {
     .output_data_tensor = 0,
     .output_labels_tensor = 1,
     .output_score_tensor = 2,
+    .quantized = 1,
+    .compiled = 1,
     .graph_config = (void*)&ei_config_tflite_graph_0
 };
 
@@ -123,10 +125,6 @@ const ei_impulse_t impulse_42_1 = {
     .learning_blocks = ei_learning_blocks,
 
     .inferencing_engine = EI_CLASSIFIER_TENSAIFLOW,
-
-    .quantized = 1,
-
-    .compiled = 0,
 
     .sensor = EI_CLASSIFIER_SENSOR_CAMERA,
     .fusion_string = "image",
