@@ -32,7 +32,7 @@
 const char* ei_classifier_inferencing_categories[] = { "chair", "computer", "cup_mug", "pen", "person" };
 
 uint8_t ei_dsp_config_22_axes[] = { 0 };
-const uint32_t ei_dsp_config_22_axes_size = 1;
+const uint8_t ei_dsp_config_22_axes_size = 1;
 ei_dsp_config_image_t ei_dsp_config_22 = {
     22, // uint32_t blockId
     1, // int implementationVersion
@@ -40,7 +40,7 @@ ei_dsp_config_image_t ei_dsp_config_22 = {
     "RGB" // select channels
 };
 
-const size_t ei_dsp_blocks_size = 1;
+const uint8_t ei_dsp_blocks_size = 1;
 ei_model_dsp_t ei_dsp_blocks[ei_dsp_blocks_size] = {
     { // DSP block 22
         22,
@@ -78,9 +78,9 @@ const ei_learning_block_config_tflite_graph_t ei_learning_block_config_23 = {
     .graph_config = (void*)&ei_config_tflite_graph_23
 };
 
-const size_t ei_learning_blocks_size = 1;
+const uint8_t ei_learning_blocks_size = 1;
 const uint32_t ei_learning_block_23_inputs[1] = { 22 };
-const uint32_t ei_learning_block_23_inputs_size = 1;
+const uint8_t ei_learning_block_23_inputs_size = 1;
 const ei_learning_block_t ei_learning_blocks[ei_learning_blocks_size] = {
     {
         23,
@@ -112,6 +112,8 @@ const ei_impulse_t impulse_142_2 = {
     .project_id = 142,
     .project_owner = "Edge Impulse Profiling",
     .project_name = "Demo: Image Recognition",
+    .impulse_id = 1,
+    .impulse_name = "",
     .deploy_version = 2,
 
     .nn_input_frame_size = 12288,
