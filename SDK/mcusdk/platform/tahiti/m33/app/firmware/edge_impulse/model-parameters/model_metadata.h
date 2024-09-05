@@ -252,4 +252,8 @@ typedef struct {
     bool padding;
 } ei_dsp_config_imu_syntiant_t;
 
+typedef struct {
+    int:0;
+} ei_post_processing_output_t;
+
 #endif // _EI_CLASSIFIER_MODEL_METADATA_H_

@@ -135,6 +135,9 @@ const ei_impulse_t impulse_142_2 = {
     .learning_blocks_size = ei_learning_blocks_size,
     .learning_blocks = ei_learning_blocks,
 
+    .postprocessing_blocks_size = 0,
+    .postprocessing_blocks = nullptr,
+
     .inferencing_engine = EI_CLASSIFIER_TENSAIFLOW,
 
     .sensor = EI_CLASSIFIER_SENSOR_CAMERA,
@@ -144,7 +147,6 @@ const ei_impulse_t impulse_142_2 = {
 
     .has_anomaly = EI_ANOMALY_TYPE_UNKNOWN,
     .label_count = 5,
-    .calibration = ei_calibration,
     .categories = ei_classifier_inferencing_categories,
     .object_detection_nms = ei_object_detection_nms
 };
