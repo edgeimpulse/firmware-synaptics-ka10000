@@ -130,6 +130,8 @@ const ei_impulse_t impulse_142_2 = {
 
     .object_detection_count = 0,
     .fomo_output_size = 0,
+    .visual_ad_grid_size_x = 0,
+    .visual_ad_grid_size_y = 0,
 
     .tflite_output_features_count = 5,
     .learning_blocks_size = ei_learning_blocks_size,
