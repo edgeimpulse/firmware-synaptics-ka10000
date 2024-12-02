@@ -115,7 +115,7 @@ void run_nn(bool debug, int delay_ms, bool use_max_baudrate) {
             ei_printf("\r\n");
         }
 
-        display_results(&result);
+        display_results(&ei_default_impulse, &result);
 
         if (debug) {
             ei_printf("End output\n");
