@@ -64,6 +64,7 @@
 #define EI_ANOMALY_TYPE_KMEANS                    1
 #define EI_ANOMALY_TYPE_GMM                       2
 #define EI_ANOMALY_TYPE_VISUAL_GMM                3
+#define EI_ANOMALY_TYPE_VISUAL_PATCHCORE          4
 
 // These must match the enum values in TensorFlow Lite's "TfLiteType"
 #define EI_CLASSIFIER_DATATYPE_FLOAT32           1
