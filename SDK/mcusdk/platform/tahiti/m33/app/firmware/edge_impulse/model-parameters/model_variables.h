@@ -24,9 +24,10 @@
 
 #include <stdint.h>
 #include "model_metadata.h"
+
+
 #include "edge-impulse-sdk/classifier/ei_model_types.h"
 #include "edge-impulse-sdk/classifier/inferencing_engines/engines.h"
-#include "edge-impulse-sdk/classifier/postprocessing/ei_postprocessing_common.h"
 
 const char* ei_classifier_inferencing_categories[] = { "chair", "computer", "cup_mug", "pen", "person" };
 
@@ -50,7 +51,6 @@ ei_model_dsp_t ei_dsp_blocks[ei_dsp_blocks_size] = {
         ei_dsp_config_22_axes_size
     }
 };
-
 const ei_config_tensaiflow_graph_t ei_config_tflite_graph_23 = {
     .implementation_version = 1,
     .input_datatype = EI_CLASSIFIER_DATATYPE_INT8,
@@ -61,16 +61,18 @@ const ei_config_tensaiflow_graph_t ei_config_tflite_graph_23 = {
     .output_quantized = 1,
     .output_scale = 0.00390625,
     .output_zeropoint = -128,
-    .output_features_count = 5
 };
 
-const uint8_t ei_output_tensors_indices_23[1] = { 0 };
-const uint8_t ei_output_tensors_size_23 = 1;
 const ei_learning_block_config_tflite_graph_t ei_learning_block_config_23 = {
     .implementation_version = 1,
+    .classification_mode = EI_CLASSIFIER_CLASSIFICATION_MODE_CLASSIFICATION,
     .block_id = 23,
-    .output_tensors_indices = ei_output_tensors_indices_23,
-    .output_tensors_size = ei_output_tensors_size_23,
+    .object_detection = 0,
+    .object_detection_last_layer = EI_CLASSIFIER_LAST_LAYER_UNKNOWN,
+    .output_data_tensor = 0,
+    .output_labels_tensor = 1,
+    .output_score_tensor = 2,
+    .threshold = 0,
     .quantized = 1,
     .compiled = 0,
     .graph_config = (void*)&ei_config_tflite_graph_23
@@ -82,31 +84,28 @@ const uint8_t ei_learning_block_23_inputs_size = 1;
 const ei_learning_block_t ei_learning_blocks[ei_learning_blocks_size] = {
     {
         23,
+        false,
         &run_nn_inference,
         (void*)&ei_learning_block_config_23,
         EI_CLASSIFIER_IMAGE_SCALING_NONE,
         ei_learning_block_23_inputs,
         ei_learning_block_23_inputs_size,
+        5
     },
 };
 
-const ei_fill_result_classification_i8_config_t ei_fill_result_classification_i8_config_23 = {
-    .zero_point = -128,
-    .scale = 0.00390625
+const ei_performance_calibration_config_t ei_calibration = {
+    1, /* integer version number */
+    false, /* has configured performance calibration */
+    (int32_t)(EI_CLASSIFIER_RAW_SAMPLE_COUNT / ((EI_CLASSIFIER_FREQUENCY > 0) ? EI_CLASSIFIER_FREQUENCY : 1)) * 1000, /* Model window */
+    0.8f, /* Default threshold */
+    (int32_t)(EI_CLASSIFIER_RAW_SAMPLE_COUNT / ((EI_CLASSIFIER_FREQUENCY > 0) ? EI_CLASSIFIER_FREQUENCY : 1)) * 500, /* Half of model window */
+    0   /* Don't use flags */
 };
 
-const size_t ei_postprocessing_blocks_size = 1;
-const ei_postprocessing_block_t ei_postprocessing_blocks[ei_postprocessing_blocks_size] = {
-    {
-        .block_id = 23,
-        .type = EI_CLASSIFIER_MODE_CLASSIFICATION,
-        .init_fn = NULL,
-        .deinit_fn = NULL,
-        .postprocess_fn = &process_classification_i8,
-        .display_fn = NULL,
-        .config = NULL,
-        .input_block_id = 23
-    },
+const ei_object_detection_nms_config_t ei_object_detection_nms = {
+    0.0f, /* NMS confidence threshold */
+    0.2f  /* NMS IOU threshold */
 };
 
 const ei_impulse_t impulse_142_2 = {
@@ -126,15 +125,20 @@ const ei_impulse_t impulse_142_2 = {
     .input_frames = 1,
     .interval_ms = 1,
     .frequency = 0,
-
     .dsp_blocks_size = ei_dsp_blocks_size,
     .dsp_blocks = ei_dsp_blocks,
 
+    .object_detection_count = 0,
+    .fomo_output_size = 0,
+    .visual_ad_grid_size_x = 0,
+    .visual_ad_grid_size_y = 0,
+
+    .tflite_output_features_count = 5,
     .learning_blocks_size = ei_learning_blocks_size,
     .learning_blocks = ei_learning_blocks,
 
-    .postprocessing_blocks_size = ei_postprocessing_blocks_size,
-    .postprocessing_blocks = ei_postprocessing_blocks,
+    .postprocessing_blocks_size = 0,
+    .postprocessing_blocks = nullptr,
 
     .inferencing_engine = EI_CLASSIFIER_TENSAIFLOW,
 
@@ -145,7 +149,8 @@ const ei_impulse_t impulse_142_2 = {
 
     .has_anomaly = EI_ANOMALY_TYPE_UNKNOWN,
     .label_count = 5,
-    .categories = ei_classifier_inferencing_categories
+    .categories = ei_classifier_inferencing_categories,
+    .object_detection_nms = ei_object_detection_nms
 };
 
 ei_impulse_handle_t impulse_handle = ei_impulse_handle_t( &impulse_142_2 );
