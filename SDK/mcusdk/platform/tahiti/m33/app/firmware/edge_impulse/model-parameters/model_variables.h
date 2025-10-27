@@ -41,8 +41,6 @@
 
 #include <stdint.h>
 #include "model_metadata.h"
-
-
 #include "edge-impulse-sdk/classifier/ei_model_types.h"
 #include "edge-impulse-sdk/classifier/inferencing_engines/engines.h"
 #include "edge-impulse-sdk/classifier/postprocessing/ei_postprocessing_common.h"
@@ -137,14 +135,13 @@ const uint8_t freeform_outputs_52_1_size = 0;
 
 uint32_t *freeform_outputs_52_1 = nullptr;
 
-
 const ei_impulse_t impulse_52_1 = {
     .project_id = 52,
     .project_owner = "Edge Impulse Profiling",
     .project_name = "Demo: Image Recognition (Tensaiflow)",
     .impulse_id = 1,
     .impulse_name = "Impulse #1",
-    .deploy_version = 5,
+    .deploy_version = 7,
 
     .nn_input_frame_size = 12288,
     .raw_sample_count = 4096,
@@ -177,14 +174,15 @@ const ei_impulse_t impulse_52_1 = {
     .has_anomaly = EI_ANOMALY_TYPE_UNKNOWN,
     .label_count = 5,
     .categories = ei_classifier_inferencing_categories_52_1,
+    .results_type = EI_CLASSIFIER_TYPE_CLASSIFICATION,
     .freeform_outputs_size = freeform_outputs_52_1_size,
     .freeform_outputs = freeform_outputs_52_1
 };
 
 ei_impulse_handle_t impulse_handle_52_1 = ei_impulse_handle_t( &impulse_52_1 );
+
 ei_impulse_handle_t& ei_default_impulse = impulse_handle_52_1;
 constexpr auto& ei_classifier_inferencing_categories = ei_classifier_inferencing_categories_52_1;
 const auto ei_dsp_blocks_size = ei_dsp_blocks_52_1_size;
 ei_model_dsp_t *ei_dsp_blocks = ei_dsp_blocks_52_1;
-
 #endif // _EI_CLASSIFIER_MODEL_VARIABLES_H_
